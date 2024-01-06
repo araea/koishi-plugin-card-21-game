@@ -1002,7 +1002,7 @@ ${(bankerScore > 21) ? '糟糕！庄家爆掉了！💥' : ''}${(bankerHand.leng
 ${(await settleBlackjackGame(platform, guildId))}
 👏👏👏
 游戏结束！
-下次再来玩吧，祝你好运！🍀🍀🍀`
+下次再来玩吧，祝你好运！`
 
       }
       // 游戏没有结束 不需要去管 直接获取新的游戏信息即可 因为在 isendgame里面已经更新了
@@ -1094,7 +1094,7 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
     // 停牌之后游戏结束则直接结算，否则下一套牌或下一个玩家
     if (await isGameEnded(guildId)) {
       await session.send(`当前玩家是：【${username}】
-你停牌了！看来你的你的手牌很满意嘛~
+你停牌了！看来你对你的手牌很满意嘛~
 你当前的手牌为：【${playerHand.join('')}】
 点数为：【${score}】点！
 
@@ -1153,7 +1153,7 @@ ${(await settleBlackjackGame(platform, guildId))}
 【要牌】或【停牌】`
     // 下一套牌或下一位玩家
     return `当前玩家是：【${username}】
-你停牌了！看来你的你的手牌很满意嘛~
+你停牌了！看来你对你的手牌很满意嘛~
 你当前的手牌为：【${playerHand.join('')}】
 点数：【${score}】点！
 
@@ -1269,8 +1269,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 点数为：【${calculateHandScore(playerHand)}】点！
 请选择你接下来的操作：
 【要牌】或【停牌】
-【要牌】：你只能再要一张牌！
-`
+【要牌】：你只能再要一张牌！`
   })
 
   async function settleBlackjackGame(platform, guildId) {
@@ -1305,7 +1304,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           // 赔 1.5 倍
           updateData['win'] = bet * 1.5 + bet;
         } else {
-          updateData['win'] = bet * 2;
+          updateData['win'] = bet + bet;
         }
 
         await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, updateData);
@@ -1327,7 +1326,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           if (score === 21 && playerHand.length === 2) {
             updateData['win'] = 0 + bet;
           } else {
-            updateData['win'] = -bet * 1.5;
+            updateData['win'] = -bet * 1.5 + bet;
           }
 
           await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, updateData);
@@ -1347,14 +1346,14 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           if (score === 21 && playerHand.length === 2) {
             updateData['win'] = bet * 1.5 + bet;
           } else if (score > 21) {
-            // 闲家爆牌 本金没有 再赔 1
-            updateData['win'] = -bet;
+            // 闲家爆牌 本金没有
+            updateData['win'] = 0;
           } else if (bankerScore > score) {
             // 庄家大
-            updateData['win'] = -bet;
+            updateData['win'] = 0;
           } else if (bankerScore < score) {
             // 闲家大
-            updateData['win'] = bet * 2;
+            updateData['win'] = bet + bet;
           } else if (bankerScore === score) {
             // 平
             updateData['win'] = bet;
@@ -1369,7 +1368,6 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     const getPlayerRecords = await ctx.database.get('blackjack_playing_record', { guildId });
     for (const record of getPlayerRecords) {
       const { playerHand } = record;
-      const score = calculateHandScore(playerHand);
       let { guildId, userId, playerHandIndex, insurance, isBuyInsurance } = record;
       // 庄家是黑杰克，获得两倍保险金 不是的话，直接没收保险金
       if (isBuyInsurance && bankerHand.length === 2 && bankerScore === 21) {
