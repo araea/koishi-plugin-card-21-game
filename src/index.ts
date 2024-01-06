@@ -18,6 +18,7 @@ export const usage = `
 本插件提供了以下命令，可以在群聊中使用：
 
 - blackJack: 显示本插件的帮助信息。
+- blackJack.转账 [bet:number]: 给其他玩家转账，例如：blackJack.转账 @小小学 100。
 - blackJack.加入游戏 [bet:number]: 加入游戏并投注筹码，如果不指定 bet，则会提示输入。
 - blackJack.退出游戏: 退出游戏，退回已投注的筹码，只能在游戏未开始时使用。
 - blackJack.开始游戏: 开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
@@ -180,6 +181,58 @@ export function apply(ctx: Context, config: Config) {
       await session.execute(`blackjack -h`)
     })
 
+  // zz*
+  ctx.command('blackJack.转账 [content:text]', '转账')
+    .action(async ({ session }, content) => {
+      const { user, platform } = session
+      const userIdRegex = /<at id="([^"]+)"(?: name="([^"]+)")?\/>/;
+      const match = content.match(userIdRegex);
+
+      if (!match) {
+        return '内容中没有找到符合要求的用户ID信息。';
+      }
+
+      const userId = match[1];
+      const username = match[2]
+
+      let remainingContent = content.replace(match[0], '').trim();
+
+      let amount: number;
+      if (remainingContent.length > 0) {
+        amount = parseFloat(remainingContent);
+
+        if (isNaN(amount)) {
+          return '转账金额必须是一个有效的数字。';
+        }
+
+        if (amount < 0) {
+          return '转账金额不能为负数。';
+        }
+      } else {
+        return '未找到有效的转账金额。';
+      }
+
+      // @ts-ignore
+      const uid = user.id
+      const [userMonetary] = await ctx.database.get('monetary', { uid })
+      const userMoney = userMonetary.value
+
+      if (userMoney < amount) {
+        return `您现在只拥有【${userMoney}】点货币，不足以转账【${amount}】个货币。`;
+      }
+
+      const newScore = userMoney - amount;
+
+      await ctx.database.set('monetary', { uid }, { value: newScore });
+
+      const uid2 = (await ctx.database.getUser(platform, userId)).id
+      const [userMonetary2] = await ctx.database.get('monetary', { uid: uid2 })
+      await ctx.database.set('monetary', { uid: uid2 }, { value: userMonetary2.value + amount });
+
+      await session.send(`转账成功！
+你当前的通用货币数额为【${newScore}】个！
+${username}当前货币为【${userMonetary2.value + amount}】个！`);
+    });
   // j*
   // 加入游戏并投注筹码
   ctx.command('blackJack.加入游戏 [bet:number]', '加入游戏并投注筹码')

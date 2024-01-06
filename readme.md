@@ -42,6 +42,7 @@ npm install koishi-plugin-card-21-game
 本插件提供了以下命令，可以在群聊中使用：
 
 - blackJack: 显示本插件的帮助信息。
+- blackJack.转账 [bet:number]: 给其他玩家转账，例如：blackJack.转账 @小小学 100。
 - blackJack.加入游戏 [bet:number]: 加入游戏并投注筹码，如果不指定 bet，则会提示输入。
 - blackJack.退出游戏: 退出游戏，退回已投注的筹码，只能在游戏未开始时使用。
 - blackJack.开始游戏: 开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
