@@ -989,10 +989,6 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：多下一倍的注
 ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     }
     // 未爆牌：
-    console.log(playerHand)
-    console.log(score)
-    console.log(isHandPair)
-    console.log(score === 11 && playerHand.length === 2)
     return `当前玩家是：【${username}】
 你要了一张牌！
 你当前的手牌为：【${playerHand.join('')}】
@@ -1138,7 +1134,6 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       return // 废弃
     }
     let playerHand = player.playerHand
-    console.log(playerHand)
     if (!isPair(playerHand)) {
       return `你的牌型不能分牌呢~ 要是对子才可以！`
     }
