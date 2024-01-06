@@ -1,21 +1,46 @@
 {
   "name": "koishi-plugin-card-21-game",
-  "description": "",
-  "version": "0.0.1",
+  "description": "欢迎来到 21 点游戏，你可以在这里体验赌博的乐趣，但不用担心输光钱💸。",
+  "version": "1.2.4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
     "lib",
     "dist"
   ],
+  "koishi": {
+    "service": {
+      "required": [
+        "monetary",
+        "database"
+      ]
+    }
+  },
   "license": "MIT",
+  "author": "Nawyjx <3373167460@qq.com>",
+  "homepage": "https://www.npmjs.com/package/koishi-plugin-card-21-game?activeTab=readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/araea/koishi-plugin-card-21-game.git"
+  },
   "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "card",
+    "game",
+    "21",
+    "21点",
+    "黑杰克",
+    "blackjack",
+    "赌博",
+    "bet"
   ],
   "peerDependencies": {
     "koishi": "^4.16.3"
+  },
+  "dependencies": {
+    "koishi-plugin-monetary": "^0.1.3"
   }
 }
