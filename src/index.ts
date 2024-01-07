@@ -423,7 +423,9 @@ ${playerOrder}
 
       await session.send(` 游戏开始！
 ${(enableCardBetting) ? prompt : ''}
-⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。`)
+⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
+${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...请庄家亮牌...` : ''}`)
+
     } else if (numberOfPlayers === 1) {
       await ctx.database.set('blackjack_playing_record', { userId, guildId }, { playerIndex: 1, playerHandIndex: 1 })
       const player = getPlayers[0]
@@ -449,9 +451,13 @@ ${(enableCardBetting) ? prompt : ''}
 你是今天唯一的挑战者，你敢和我赌一把吗？
 ${(enableCardBetting) ? prompt : ''}
 ⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
+${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...请庄家亮牌...` : ''}
 `)
     }
 
+    if (!enableCardBetting || !enableSurrender) {
+      await sleep(dealerSpeed * 1000)
+    }
     if (enableCardBetting) {
       // 现在是投注时间
       // 先把游戏状态更新成 投注时间
@@ -584,7 +590,7 @@ ${(enableCardBetting) ? prompt : ''}
 【要牌】或【停牌】`
     }
     // 万事具备
-    return `庄家手牌：【${dealtCardToBanker}】
+    return `庄家亮牌：【${dealtCardToBanker}】
 点数：【${calculateScore(dealtCardToBanker)}】点！
 
 【${betPlayer.username}】
