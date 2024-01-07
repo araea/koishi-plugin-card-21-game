@@ -1003,7 +1003,7 @@ s*
 
 点数为【${score}】。
 
-${score > 21 ? '爆牌！' : ((playerHand.length === 2) ? '黑杰克！' : '21！')}
+${score > 21 ? '爆牌！' : ((playerHand.length === 2) ? '黑杰克！' : '21点！')}
 
 玩家回合结束，庄家正在补牌...`)
         await sleep(dealerSpeed * 1000)
@@ -1069,7 +1069,7 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：下注翻倍，只
 你要了一张牌！
 你的手牌：【${playerHand.join('')}】，
 点数：【${score}】！
-😱 糟糕，你超过了 21！
+${(score > 21) ? '😱 糟糕，你超过了 21，你爆了！' : ((playerHand.length === 2) ? '黑杰克！' : '21点！')}
 
 ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     }
@@ -1234,7 +1234,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       guildId, userId, bet: player.bet, playerHand: [`${newPlayerHand2}`], playerIndex: player.playerIndex,
       username, playerHandIndex: player.playerHandIndex + 1
     })
-    return  `当前玩家是：【${username}】
+    return `当前玩家是：【${username}】
 你分牌如刀，投注如雷，手气如火！🔥
 
 你的牌是：【${newPlayerHand1}】、【${newPlayerHand2}】
