@@ -424,7 +424,8 @@ ${playerOrder}
       await session.send(` 游戏开始！
 ${(enableCardBetting) ? prompt : ''}
 ⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
-${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...请庄家亮牌...` : ''}`)
+
+${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮牌！` : ''}`)
 
     } else if (numberOfPlayers === 1) {
       await ctx.database.set('blackjack_playing_record', { userId, guildId }, { playerIndex: 1, playerHandIndex: 1 })
@@ -451,8 +452,8 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...请庄家�
 你是今天唯一的挑战者，你敢和我赌一把吗？
 ${(enableCardBetting) ? prompt : ''}
 ⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
-${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...请庄家亮牌...` : ''}
-`)
+
+${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮牌！` : ''}`)
     }
 
     if (!enableCardBetting || !enableSurrender) {
@@ -594,7 +595,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...请庄家�
 点数：【${calculateScore(dealtCardToBanker)}】点！
 
 【${betPlayer.username}】
-手牌：【${dealtCardToPunter}】
+你的手牌：【${dealtCardToPunter}】
 点数：【${calculateScore(dealtCardToPunter)}】点！
 
 请选择：
@@ -1084,7 +1085,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     // 未爆牌：
     return `当前玩家是：【${username}】
 你要了一张牌！
-你当前的手牌为：【${playerHand.join('')}】
+你的手牌：【${playerHand.join('')}】
 点数：【${score}】点！
 请选择你接下来的操作：
 【要牌】或【停牌】${(isHandPair) ? '或【分牌】' : ''}${(score === 11 && playerHand.length === 2) ? '或【加倍】' : ''}
@@ -1188,7 +1189,7 @@ ${(await settleBlackjackGame(platform, guildId))}
     // 下一套牌或下一位玩家
     return `当前玩家是：【${username}】
 你停牌了！看来你对你的手牌很满意嘛~
-你当前的手牌为：【${playerHand.join('')}】
+你的手牌：【${playerHand.join('')}】
 点数：【${score}】点！
 
 ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
@@ -1298,8 +1299,8 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 你的投注筹码已更新为：【${player.bet * 2}】个！
 你剩余的通用货币为：【${userMonetary.value - player.bet}】点！
 
-你当前的手牌为：【${playerHand.join('')}】
-点数为：【${calculateHandScore(playerHand)}】点！
+你的手牌：【${playerHand.join('')}】
+点数：【${calculateHandScore(playerHand)}】点！
 请选择你接下来的操作：
 【要牌】或【停牌】
 【要牌】：你只能再要一张牌！`
