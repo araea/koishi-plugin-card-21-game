@@ -50,8 +50,8 @@ export interface Config {
 }
 
 export const Config: Schema<Config> = Schema.object({
-  enableCardBetting: Schema.boolean().default(true).description(`是否开启投注牌型功能。`),
-  enableSurrender: Schema.boolean().default(true).description(`是否开启投降功能。`),
+  enableCardBetting: Schema.boolean().default(false).description(`是否开启投注牌型功能，默认为值 false。`),
+  enableSurrender: Schema.boolean().default(false).description(`是否开启投降功能，默认为值 false。`),
   dealerSpeed: Schema.number()
     .min(0).default(2).description(`庄家要牌的速度，默认值为 2，单位是秒。`),
   betMaxDuration: Schema.number()
@@ -370,7 +370,8 @@ export function apply(ctx: Context, config: Config) {
     if (numberOfPlayers < 1) {
       `好像没人玩呀！` // 好像有点多余
     }
-
+    // 切换游戏状态
+    await ctx.database.set('blackjack_game_record', { guildId }, { gameStatus: '投注时间' })
     // 那么现在，能够确保人数至少够了，接下来打乱玩家顺序，并用序号一一对应，可以用序号索引到对应的userId和usrname
     // 但是，如果人数只有一个人，那就不用打乱了对吧
     // 解决报错： TypeError: Cannot read properties of undefined (reading 'push')
@@ -397,14 +398,11 @@ export function apply(ctx: Context, config: Config) {
         .map((item) => `${item.index}. 【${item.player.username ?? 'Unknown'}】`)
         .join('\n');
 
-
-      await session.send(` 游戏开始！
-
- 你们有 ${betMaxDuration} 秒钟的时间进行投注。
+      const prompt = `你们有 ${betMaxDuration} 秒钟的时间进行投注。
 
 🎲 玩家序号：
 ${playerOrder}
-s*
+
 🃏 投注类型：
 
 1. 对子：闲家首两张牌相同点数，倍数为 5。
@@ -415,22 +413,21 @@ s*
 6. 同花顺：庄家第一张牌与闲家前两张牌同花色且连号，倍数为 25。
 7. 同花三条：庄家第一张牌与闲家前两张牌同花色和点数，倍数为 50。
 
- 投注示例：投注 1 7 50
+  投注示例：投注 1 7 50
 
- 投注格式：投注 [玩家序号] [类型] [金额]
+  投注格式：投注 [玩家序号] [类型] [金额]
 
- 其他可选操作：【跳过投注】
+  其他可选操作：【跳过投注】
 
- 【跳过投注】：闲家发送此操作可直接进入下一阶段。
+  【跳过投注】：闲家发送此操作可直接进入下一阶段。`
 
+      await session.send(` 游戏开始！
+${(enableCardBetting) ? prompt : ''}
 ⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。`)
     } else if (numberOfPlayers === 1) {
       await ctx.database.set('blackjack_playing_record', { userId, guildId }, { playerIndex: 1, playerHandIndex: 1 })
       const player = getPlayers[0]
-      // 人数为 1 的时候，新的提示词
-      await session.send(`欢迎来到黑杰克的世界！
-你是今天唯一的挑战者，你敢和我赌一把吗？
-你有 ${betMaxDuration} 秒的时间进行投注。
+      const prompt = `你有 ${betMaxDuration} 秒的时间进行投注。
 🎲 玩家序号：
 1. 【${player.username}】
 
@@ -442,10 +439,15 @@ s*
 5. 三条：庄家第一张牌与闲家前两张牌同点数，倍数为 25。
 6. 同花顺：庄家第一张牌与闲家前两张牌同花色且连号，倍数为 25。
 7. 同花三条：庄家第一张牌与闲家前两张牌同花色和点数，倍数为 50。
- 投注示例：投注 1 7 50
- 投注格式：投注 [玩家序号] [类型] [金额]
- 其他可选操作：跳过投注
- 【跳过投注】：闲家发送此操作可直接进入下一阶段。
+  投注示例：投注 1 7 50
+  投注格式：投注 [玩家序号] [类型] [金额]
+  其他可选操作：跳过投注
+  【跳过投注】：闲家发送此操作可直接进入下一阶段。`
+
+      // 人数为 1 的时候，新的提示词
+      await session.send(`欢迎来到黑杰克的世界！
+你是今天唯一的挑战者，你敢和我赌一把吗？
+${(enableCardBetting) ? prompt : ''}
 ⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
 `)
     }

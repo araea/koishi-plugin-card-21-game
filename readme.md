@@ -31,6 +31,8 @@ npm install koishi-plugin-card-21-game
 
 本插件提供了以下配置项，可以在启动插件前进行设置：
 
+- enableCardBetting: 是否开启投注牌型功能，默认为值 false。
+- enableSurrender: 是否开启投降功能，默认值为 false。
 - dealerSpeed: 庄家要牌的速度，默认值为 2，单位是秒。
 - betMaxDuration: 投注牌型操作的等待时长，默认值为 30，单位是秒。
 - buyInsuranceMaxDuration: 买保险操作的等待时长，默认值为 10，单位是秒。
