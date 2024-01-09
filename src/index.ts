@@ -267,7 +267,7 @@ export function apply(ctx: Context, config: Config) {
         // @ts-ignore
         const uid = user.id;
         const [userMonetary] = await ctx.database.get('monetary', { uid });
-        await session.send(`【${username}}，加入游戏，请投注！
+        await session.send(`【${username}】，加入游戏，请投注！
 你有 ${userMonetary.value} 通用货币，请输入投注数额：`)
 
         bet = Number(await session.prompt())
