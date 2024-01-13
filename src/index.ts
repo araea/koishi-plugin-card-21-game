@@ -68,7 +68,6 @@ declare module 'koishi' {
   interface Tables {
     blackjack_game_record: BlackJackGameRecord
     blackjack_playing_record: BlackJackPlayingRecord
-    blackjack_debt_record: BlackJackDebtRecord
   }
 }
 
@@ -106,13 +105,6 @@ export interface BlackJackPlayingRecord {
   win: number
   betWin: number
   afterDoublingTheBet: string
-}
-export interface BlackJackDebtRecord {
-  id: number
-  guildId: string
-  userId: string
-  username: string
-  debt: number
 }
 
 const initialDeck = [
@@ -162,16 +154,6 @@ export function apply(ctx: Context, config: Config) {
     win: 'double',
     betWin: 'double',
     afterDoublingTheBet: 'string'
-  }, {
-    primary: 'id',
-    autoInc: true,
-  })
-  ctx.model.extend('blackjack_debt_record', {
-    id: 'unsigned',
-    guildId: 'string',
-    userId: 'string',
-    username: 'string',
-    debt: 'double',
   }, {
     primary: 'id',
     autoInc: true,
