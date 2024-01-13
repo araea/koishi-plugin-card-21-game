@@ -267,6 +267,11 @@ export function apply(ctx: Context, config: Config) {
         // @ts-ignore
         const uid = user.id;
         const [userMonetary] = await ctx.database.get('monetary', { uid });
+        if (userMonetary.value <= 0) {
+          return `【${username}】，抱歉，您的通用货币为 ${userMonetary.value}，无法加入游戏。
+
+赶快去赚些钱吧，加入游戏的大门随时为您敞开！`;
+        }
         await session.send(`【${username}】，加入游戏，请投注！
 你有 ${userMonetary.value} 通用货币，请输入投注数额：`)
 
