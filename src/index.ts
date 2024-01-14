@@ -1011,8 +1011,8 @@ ${score > 21 ? '爆牌！' : ((playerHand.length === 2) ? '黑杰克！' : '21�
 
           await sleep(dealerSpeed * 1000)
           await session.send(`庄家摸牌...
-手牌【${bankerHand.join('')}】，
-点数【${bankerScore}】点！
+手牌：【${bankerHand.join('')}】，
+点数为【${bankerScore}】点！
 ${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
 
           if (bankerScore < 17) {
@@ -1122,9 +1122,10 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
     // 停牌之后游戏结束则直接结算，否则下一套牌或下一个玩家
     if (await isGameEnded(guildId)) {
       await session.send(`【${username}】停牌，
-手牌【${playerHand.join('')}】，
-点数【${score}】！
-庄家补牌中...`)
+你的手牌是：【${playerHand.join('')}】，
+点数为【${score}】！
+
+玩家回合结束，庄家正在补牌中...`)
       // 为庄家发一张牌 判断 继续发牌
       await sleep(dealerSpeed * 1000)
       let bankerHand: string[] = gameInfo.bankerHand;
@@ -1134,8 +1135,8 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
         const bankerScore = calculateHandScore(bankerHand);
         await sleep(dealerSpeed * 1000)
           await session.send(`庄家摸牌...
-手牌【${bankerHand.join('')}】，
-点数【${bankerScore}】点！
+手牌：【${bankerHand.join('')}】，
+点数为【${bankerScore}】点！
 ${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
 
         if (bankerScore < 17) {
