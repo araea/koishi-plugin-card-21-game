@@ -1012,7 +1012,7 @@ ${score > 21 ? '爆牌！' : ((playerHand.length === 2) ? '黑杰克！' : '21�
           await sleep(dealerSpeed * 1000)
           await session.send(`庄家摸牌...
 手牌【${bankerHand.join('')}】，
-点数【${bankerScore}】。
+点数【${bankerScore}】点！
 ${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
 
           if (bankerScore < 17) {
@@ -1133,8 +1133,10 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
         bankerHand.push(dealtCardToBanker);
         const bankerScore = calculateHandScore(bankerHand);
         await sleep(dealerSpeed * 1000)
-        await session.send(`庄家抽了【${bankerHand.join('')}】，共【${bankerScore}】点。
-${(bankerScore > 21) ? '庄家爆牌！' : (bankerHand.length === 2 && bankerScore === 21) ? '庄家黑杰克！' : (bankerScore === 21) ? '庄家21点！' : ''}${(bankerScore < 17) ? `\n不足 17 点，继续抽牌。\n` : '\n达到或超过 17 点，庄家停牌。\n'}`);
+          await session.send(`庄家摸牌...
+手牌【${bankerHand.join('')}】，
+点数【${bankerScore}】点！
+${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
 
         if (bankerScore < 17) {
           await bankerPlayGame(guildId, deck);
