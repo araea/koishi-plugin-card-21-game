@@ -47,6 +47,7 @@ export interface Config {
   buyInsuranceMaxDuration: number
   surrenderMaxDuration: number
   numberOfDecks: number
+  transferFeeRate
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -62,6 +63,8 @@ export const Config: Schema<Config> = Schema.object({
     .min(0).default(10).description(`投降操作的等待时长，默认值为 10，单位是秒。`),
   numberOfDecks: Schema.number()
     .min(1).max(8).default(4).description(`使用几副扑克牌，默认为 4 副（因为闲家都是明牌，所以建议使用默认值）。`),
+  transferFeeRate: Schema.number()
+    .default(0.1).description(`转账收取的手续费比例。`),
 })
 
 declare module 'koishi' {
@@ -115,7 +118,7 @@ const initialDeck = [
 ]
 
 export function apply(ctx: Context, config: Config) {
-  const { betMaxDuration, buyInsuranceMaxDuration, surrenderMaxDuration, numberOfDecks, dealerSpeed, enableCardBetting, enableSurrender } = config
+  const { betMaxDuration, buyInsuranceMaxDuration, surrenderMaxDuration, numberOfDecks, dealerSpeed, enableCardBetting, enableSurrender, transferFeeRate } = config
   // 群组id 牌堆 当前进行操作的玩家 游戏状态（开始、未开始、投注时间...） 是否可以投降
   ctx.model.extend('blackjack_game_record', {
     id: 'unsigned',
@@ -211,7 +214,14 @@ export function apply(ctx: Context, config: Config) {
 您的货币余额：【${userMoney}】点。`;
       }
 
-      const newScore = userMoney - amount;
+      const transferFee = amount * transferFeeRate
+      if (userMoney < amount + transferFee) {
+        return `抱歉，转账失败！
+您的账户余额不足以支付转账所需手续费。
+转账所需手续费为【${transferFee}】个通用货币，
+而转账后您的货币余额仅剩【${userMoney - amount - transferFee}】个。`;
+      }
+      const newScore = userMoney - amount - transferFee;
 
       await ctx.database.set('monetary', { uid }, { value: newScore });
 
@@ -228,6 +238,7 @@ export function apply(ctx: Context, config: Config) {
 
       await session.send(`转账成功！
 您已将【${amount}】个通用货币转给【${username}】，
+收取手续费【${transferFee}】个通用货币，
 您的通用货币余额为【${newScore}】个。`);
     });
 

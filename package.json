@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-card-21-game",
   "description": "欢迎来到 21 点游戏，你可以在这里体验赌博的乐趣，但不用担心输光钱💸。",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
