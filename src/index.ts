@@ -170,24 +170,22 @@ export function apply(ctx: Context, config: Config) {
   // zz*
   ctx.command('blackJack.转账 [content:text]', '转账')
     .action(async ({ session }, content) => {
-      const { user, platform } = session
-      const userIdRegex = /<at id="([^"]+)"(?: name="([^"]+)")?\/>/;
+      const { user, platform } = session;
+      const userIdRegex = /<at id="(?<userId>[^"]+)"(?: name="(?<username>[^"]+)")?\/>/;
       const match = content.match(userIdRegex);
 
       if (!match) {
         return '未找到符合要求的用户 ID。';
       }
 
-      const userId = match[1];
-      const username = match[2]
-
+      const { userId, username } = match.groups;
       let remainingContent = content.replace(match[0], '').trim();
 
       let amount: number;
       if (remainingContent.length > 0) {
         amount = parseFloat(remainingContent);
 
-        if (isNaN(amount)) {
+        if (Number.isNaN(amount)) {
           return '转账金额必须是一个有效的数字。';
         }
 
@@ -199,27 +197,40 @@ export function apply(ctx: Context, config: Config) {
       }
 
       // @ts-ignore
-      const uid = user.id
-      const [userMonetary] = await ctx.database.get('monetary', { uid })
-      const userMoney = userMonetary.value
+      const uid = user.id;
+      const getUserMonetary = await ctx.database.get('monetary', { uid });
+      if (getUserMonetary.length === 0) {
+        await ctx.database.create('monetary', { uid, value: 0, currency: 'default' });
+        return `您无货币记录，无法进行转账操作。`;
+      }
+      const userMonetary = getUserMonetary[0];
+      const userMoney = userMonetary.value;
 
       if (userMoney < amount) {
         return `您当前余额不足以转账【${amount}】个货币。
-您的货币余额：【${userMoney}】点。`
+您的货币余额：【${userMoney}】点。`;
       }
 
       const newScore = userMoney - amount;
 
       await ctx.database.set('monetary', { uid }, { value: newScore });
 
-      const uid2 = (await ctx.database.getUser(platform, userId)).id
-      const [userMonetary2] = await ctx.database.get('monetary', { uid: uid2 })
-      await ctx.database.set('monetary', { uid: uid2 }, { value: userMonetary2.value + amount });
+      const targetUser = await ctx.database.getUser(platform, userId);
+      const uid2 = targetUser.id;
+      const getUserMonetary2 = await ctx.database.get('monetary', { uid: uid2 });
+
+      if (getUserMonetary2.length === 0) {
+        await ctx.database.create('monetary', { uid: uid2, value: amount, currency: 'default' });
+      } else {
+        const userMonetary2 = getUserMonetary2[0];
+        await ctx.database.set('monetary', { uid: uid2 }, { value: userMonetary2.value + amount });
+      }
 
       await session.send(`转账成功！
 您已将【${amount}】个通用货币转给【${username}】，
 您的通用货币余额为【${newScore}】个。`);
     });
+
   // j*
   // 加入游戏并投注筹码
   ctx.command('blackJack.加入游戏 [bet:number]', '加入游戏并投注筹码')
@@ -1134,7 +1145,7 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
         bankerHand.push(dealtCardToBanker);
         const bankerScore = calculateHandScore(bankerHand);
         await sleep(dealerSpeed * 1000)
-          await session.send(`庄家摸牌...
+        await session.send(`庄家摸牌...
 手牌：【${bankerHand.join('')}】，
 点数为【${bankerScore}】点！
 ${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
