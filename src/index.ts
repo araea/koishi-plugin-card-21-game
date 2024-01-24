@@ -1,5 +1,5 @@
-import { Context, Keys, Schema, sleep } from 'koishi'
-import { } from 'koishi-plugin-monetary'
+import {Context, Keys, Schema, sleep} from 'koishi'
+import {} from 'koishi-plugin-monetary'
 
 export const inject = {
   required: ['monetary', 'database'],
@@ -10,35 +10,31 @@ export const usage = `
 
 - 本插件仅支持在群聊中游玩。
 - 建议为指令添加指令别名，方便输入和记忆。
-- 本插件依赖于 monetary 和 database 服务，需要先启动这两个服务。
+- 本插件依赖于 \`monetary\` 和 \`database\` 服务，需要先启动这两个服务。
 - 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏。
 
 ## 📝 命令
 
 本插件提供了以下命令，可以在群聊中使用：
 
-- blackJack: 显示本插件的帮助信息。
-- blackJack.转账 [bet:number]: 给其他玩家转账，例如：blackJack.转账 @小小学 100。
-- blackJack.加入游戏 [bet:number]: 加入游戏并投注筹码，如果不指定 bet，则会提示输入。
-- blackJack.退出游戏: 退出游戏，退回已投注的筹码，只能在游戏未开始时使用。
-- blackJack.开始游戏: 开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
-- blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]: 在游戏开始前，对其他玩家的手牌进行牌型投注，需要指定玩家序号、牌型和金额。
-- blackJack.跳过投注: 在游戏开始前，跳过牌型投注的等待时间，直接进入下一阶段。
-- blackJack.买保险: 在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2 倍保险金，若否则损失保险金。
-- blackJack.跳过买保险: 在游戏开始后，如果庄家的第一张牌是 A，则可以跳过买保险的等待时间，直接进入下一阶段。
-- blackJack.投降: 在游戏开始后，未要牌前可投降，退回半注（投注筹码与牌型投注的一半）。
-- blackJack.跳过投降: 在游戏开始后，跳过投降的等待时间，直接进入下一阶段。
-- blackJack.要牌: 在游戏进行中，要一张牌，如果点数超过 21 点，则爆牌，输掉本轮游戏。
-- blackJack.停牌: 在游戏进行中，停止要牌，等待庄家和其他玩家的操作。
-- blackJack.加倍: 在游戏进行中，如果手牌只有两张，则可以加倍投注，但只能再要一张牌，然后停牌。
-- blackJack.分牌: 在游戏进行中，如果手牌只有两张且点数相同，则可以分成两副手牌，分别进行操作，如果分出的是 A，则只能再要一张牌。
-- blackJack.重新开始: 在游戏结束后，重新开始游戏，清空所有记录，不退还筹码。
+- \`blackJack\`：显示本插件的帮助信息。
+- \`blackJack.转账 [bet:number]\`：给其他玩家转账，例如：blackJack.转账 @小小学 100。
+- \`blackJack.加入游戏 [bet:number]\`：加入游戏并投注筹码，如果不指定 bet，则会提示输入。
+- \`blackJack.退出游戏\`：退出游戏，退回已投注的筹码，只能在游戏未开始时使用。
+- \`blackJack.开始游戏\`：开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
+- \`blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]\`：在游戏开始前，对其他玩家的手牌进行牌型投注，需要指定玩家序号、牌型和金额。
+- \`blackJack.跳过投注\`：在游戏开始前，跳过牌型投注的等待时间，直接进入下一阶段。
+- \`blackJack.买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2 倍保险金，若否则损失保险金。
+- \`blackJack.跳过买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以跳过买保险的等待时间，直接进入下一阶段。
+- \`blackJack.投降\`：在游戏开始后，未要牌前可投降，退回半注（投注筹码与牌型投注的一半）。
+- \`blackJack.跳过投降\`：在游戏开始后，跳过投降的等待时间，直接进入下一阶段。
+- \`blackJack.要牌\`：在游戏进行中，要一张牌，如果点数超过 21 点，则爆牌，输掉本轮游戏。
+- \`blackJack.停牌\`：在游戏进行中，停止要牌，等待庄家和其他玩家的操作。
+- \`blackJack.加倍\`：在游戏进行中，如果手牌只有两张，则可以加倍投注，但只能再要一张牌，然后停牌。
+- \`blackJack.分牌\`：在游戏进行中，如果手牌只有两张且点数相同，则可以分成两副手牌，分别进行操作，如果分出的是 A，则只能再要一张牌。
+- \`blackJack.重新开始\`：在游戏结束后，重新开始游戏，清空所有记录，不退还筹码。
+`
 
-## 🙏 致谢
-
-* [Koishi](https://koishi.chat/) - 机器人框架
-* [Wikipedia](https://zh.wikipedia.org/wiki/%E4%BA%8C%E5%8D%81%E4%B8%80%E9%BB%9E) - 黑杰克游戏规则
-* [WikiHow](https://zh.wikihow.com/%E7%8E%A921%E7%82%B9) - 黑杰克游戏技巧`
 export interface Config {
   enableCardBetting: boolean
   enableSurrender: boolean
@@ -118,7 +114,16 @@ const initialDeck = [
 ]
 
 export function apply(ctx: Context, config: Config) {
-  const { betMaxDuration, buyInsuranceMaxDuration, surrenderMaxDuration, numberOfDecks, dealerSpeed, enableCardBetting, enableSurrender, transferFeeRate } = config
+  const {
+    betMaxDuration,
+    buyInsuranceMaxDuration,
+    surrenderMaxDuration,
+    numberOfDecks,
+    dealerSpeed,
+    enableCardBetting,
+    enableSurrender,
+    transferFeeRate
+  } = config
   // 群组id 牌堆 当前进行操作的玩家 游戏状态（开始、未开始、投注时间...） 是否可以投降
   ctx.model.extend('blackjack_game_record', {
     id: 'unsigned',
@@ -166,22 +171,33 @@ export function apply(ctx: Context, config: Config) {
   ctx = ctx.guild()
   // blackJack/21点帮助
   ctx.command('blackJack', 'blackJack/21点游戏帮助')
-    .action(async ({ session }) => {
+    .action(async ({session}) => {
       await session.execute(`blackjack -h`)
     })
 
   // zz*
   ctx.command('blackJack.转账 [content:text]', '转账')
-    .action(async ({ session }, content) => {
-      const { user, platform } = session;
+    .action(async ({session}, content) => {
+      if (!content) {
+        await session.send(`【@${session.username}】
+检测到缺少【被转账对象】！
+请选择您的操作：【@被转账对象】或【取消】
+【被转账对象】：@被转账人。例如，@小小学`);
+        const userInput = await session.prompt();
+        if (!userInput) return `输入超时。`;
+        if (userInput === '取消') return `转账操作已取消。`;
+        content = userInput;
+      }
+
+      const {user, platform} = session;
       const userIdRegex = /<at id="(?<userId>[^"]+)"(?: name="(?<username>[^"]+)")?\/>/;
-      const match = content.match(userIdRegex);
+      const match = content && content.match(userIdRegex); // 检查 content 是否存在再进行匹配
 
       if (!match) {
         return '未找到符合要求的用户 ID。';
       }
 
-      const { userId, username } = match.groups;
+      const {userId, username} = match.groups;
       let remainingContent = content.replace(match[0], '').trim();
 
       let amount: number;
@@ -193,7 +209,7 @@ export function apply(ctx: Context, config: Config) {
         }
 
         if (amount < 0) {
-          return '转账金额不能为负数。';
+          return '转账金额不能为负数！';
         }
       } else {
         return '未找到有效的转账金额。';
@@ -201,59 +217,65 @@ export function apply(ctx: Context, config: Config) {
 
       // @ts-ignore
       const uid = user.id;
-      const getUserMonetary = await ctx.database.get('monetary', { uid });
+      const getUserMonetary = await ctx.database.get('monetary', {uid});
       if (getUserMonetary.length === 0) {
-        await ctx.database.create('monetary', { uid, value: 0, currency: 'default' });
-        return `您无货币记录，无法进行转账操作。`;
+        await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
+        return `【@${session.username}】
+您无货币记录，无法进行转账操作！`;
       }
       const userMonetary = getUserMonetary[0];
       const userMoney = userMonetary.value;
 
       if (userMoney < amount) {
-        return `您当前余额不足以转账【${amount}】个货币。
-您的货币余额：【${userMoney}】点。`;
+        return `【@${session.username}】
+检测到您当前的余额不足！
+转账金额为：【${amount}】
+但您剩余的货币为：【${userMoney}】`;
       }
 
       const transferFee = amount * transferFeeRate
       if (userMoney < amount + transferFee) {
-        return `抱歉，转账失败！
-您的账户余额不足以支付转账所需手续费。
-转账所需手续费为【${transferFee}】个通用货币，
-而转账后您的货币余额仅剩【${userMoney - amount - transferFee}】个。`;
+        return `【@${session.username}】
+抱歉，转账失败！
+余额不足以支付转账所需手续费！
+所需手续费为：【${transferFee}】
+而转账后您仅剩：【${userMoney - amount - transferFee}】`;
       }
       const newScore = userMoney - amount - transferFee;
 
-      await ctx.database.set('monetary', { uid }, { value: newScore });
+      await ctx.database.set('monetary', {uid}, {value: newScore});
 
       const targetUser = await ctx.database.getUser(platform, userId);
       const uid2 = targetUser.id;
-      const getUserMonetary2 = await ctx.database.get('monetary', { uid: uid2 });
+      const getUserMonetary2 = await ctx.database.get('monetary', {uid: uid2});
 
       if (getUserMonetary2.length === 0) {
-        await ctx.database.create('monetary', { uid: uid2, value: amount, currency: 'default' });
+        await ctx.database.create('monetary', {uid: uid2, value: amount, currency: 'default'});
       } else {
         const userMonetary2 = getUserMonetary2[0];
-        await ctx.database.set('monetary', { uid: uid2 }, { value: userMonetary2.value + amount });
+        await ctx.database.set('monetary', {uid: uid2}, {value: userMonetary2.value + amount});
       }
 
-      await session.send(`转账成功！
-您已将【${amount}】个通用货币转给【${username}】，
-收取手续费【${transferFee}】个通用货币，
-您的通用货币余额为【${newScore}】个。`);
+      await session.send(`【@${session.username}】
+转账成功！
+被转账人为：【${username}】
+转账金额：【${amount}】
+收取手续费：【${transferFee}】
+您的余额为：【${newScore}】`);
     });
 
   // j*
   // 加入游戏并投注筹码
   ctx.command('blackJack.加入游戏 [bet:number]', '加入游戏并投注筹码')
-    .action(async ({ session }, bet) => {
-      const { guildId, userId, username, user } = session;
+    .action(async ({session}, bet) => {
+      const {guildId, userId, username, user} = session;
       // 查询当前群组的游戏记录
-      let gameRecord = await ctx.database.get('blackjack_game_record', { guildId });
+      let gameRecord = await ctx.database.get('blackjack_game_record', {guildId});
 
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
-        await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
-        gameRecord = await ctx.database.get('blackjack_game_record', { guildId });
+        await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
+        gameRecord = await ctx.database.get('blackjack_game_record', {guildId});
       }
 
       // 检查游戏状态
@@ -263,65 +285,78 @@ export function apply(ctx: Context, config: Config) {
         return `游戏已经开始了哦~`;
       }
       // 判断该玩家有没有加入过游戏
-      const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+      const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
       if (getPlayer.length !== 0) {
-        return `你已在游戏中，无法加入游戏。`
+        await session.send(`【@${username}】
+您已在游戏中！
+您的投注金额为：【${getPlayer[0].bet}】
+买定离手，无法再更改投注！`)
+        return
       }
       if (!bet) {
         // @ts-ignore
         const uid = user.id;
-        const [userMonetary] = await ctx.database.get('monetary', { uid });
+        const [userMonetary] = await ctx.database.get('monetary', {uid});
         if (userMonetary.value <= 0) {
-          return `【${username}】，抱歉，您的通用货币为 ${userMonetary.value}，无法加入游戏。
+          return `【@${username}】
+抱歉，
+您没钱啦！
+您当前的货币为：【${userMonetary.value}】
 
 赶快去赚些钱吧，加入游戏的大门随时为您敞开！`;
         }
-        await session.send(`【${username}】，加入游戏，请投注！
-你有 ${userMonetary.value} 通用货币，请输入投注数额：`)
+        await session.send(`🎉 欢迎加入 BlackJack/21 点游戏！
+希望你能玩的开心！
+
+游玩需要投注哦 ~
+您的货币余额为：【${userMonetary.value}】
+请输入您的【投注金额】：`)
 
         bet = Number(await session.prompt())
         if (isNaN(bet as number)) {
           // 处理无效输入的逻辑
-          return '输入无效，请重新输入。'
+          return '【@${username}】\n输入无效，重新来一次吧~'
         }
       }
       // 检查是否存在有效的投注金额
       if (typeof bet !== 'number' || bet <= 0) {
-        return `请准备好投注金额，方可加入游戏。`;
+        return `【@${username}】\n准备好投注金额，才可以加入游戏哦~`;
       }
 
       // @ts-ignore
       const uid = user.id;
-      const [userMonetary] = await ctx.database.get('monetary', { uid });
+      const [userMonetary] = await ctx.database.get('monetary', {uid});
 
       if (userMonetary.value < bet) {
-        return `您的余额不足，请有钱后再试。
-余额：【${userMonetary.value}】点`;
+        return `【@${username}】\n您没钱惹~
+您的余额为：【${userMonetary.value}】`;
       }
 
       await ctx.monetary.cost(uid, bet);
       // 在游玩表中创建玩家
-      await ctx.database.create('blackjack_playing_record', { guildId, userId, username, bet, playerHandIndex: 1 });
+      await ctx.database.create('blackjack_playing_record', {guildId, userId, username, bet, playerHandIndex: 1});
 
       // 获取当前玩家数量
-      const numberOfPlayers = (await ctx.database.get('blackjack_playing_record', { guildId })).length;
+      const numberOfPlayers = (await ctx.database.get('blackjack_playing_record', {guildId})).length;
 
-      return `【${username}】，欢迎来到游戏！
-你已投注 ${bet} 筹码，
-剩余 ${userMonetary.value - bet} 通用货币。
-当前共有 ${numberOfPlayers} 名玩家。`;
+      return `【@${username}】
+投注成功！
+您正式加入游戏了~
+投注筹码数额为：【${bet}】
+剩余通用货币为：【${userMonetary.value - bet}】
+当前玩家人数：${numberOfPlayers} 名！`;
     });
   // q*
-  ctx.command('blackJack.退出游戏', '退出游戏').action(async ({ session }) => {
-    const { guildId, userId, user } = session;
+  ctx.command('blackJack.退出游戏', '退出游戏').action(async ({session}) => {
+    const {guildId, userId, user,username} = session;
 
     // 检查游戏状态
-    const gameInfo = await ctx.database.get('blackjack_game_record', { guildId });
+    const gameInfo = await ctx.database.get('blackjack_game_record', {guildId});
 
     if (gameInfo.length === 0) {
       // 如果当前群组没有游戏信息，新建一个
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
-      return '你都没加入，怎么退出？';
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
+      return '你都没加入呢，怎么退出？';
     }
 
     if (gameInfo[0].gameStatus !== '未开始') {
@@ -329,7 +364,7 @@ export function apply(ctx: Context, config: Config) {
     }
 
     // 检查玩家是否加入游戏
-    const playerInfo = await ctx.database.get('blackjack_playing_record', { guildId, userId });
+    const playerInfo = await ctx.database.get('blackjack_playing_record', {guildId, userId});
 
     if (playerInfo.length === 0) {
       return '加入了才能退出哦~';
@@ -341,26 +376,27 @@ export function apply(ctx: Context, config: Config) {
     // 把钱还给他
     await ctx.monetary.gain(uid, player.bet)
     // 从游戏中移除玩家
-    await ctx.database.remove('blackjack_playing_record', { guildId, userId });
+    await ctx.database.remove('blackjack_playing_record', {guildId, userId});
 
     // 获取当前玩家数量
-    const numberOfPlayers = (await ctx.database.get('blackjack_playing_record', { guildId })).length;
+    const numberOfPlayers = (await ctx.database.get('blackjack_playing_record', {guildId})).length;
 
-    return `您退出了游戏，您将获得退款。
-剩余玩家人数：${numberOfPlayers}。`;
+    return `【@${username}】\n退出游戏成功！
+钱已经退给你啦~
+剩余玩家人数：${numberOfPlayers} 名！`;
   });
   // s*
   // 开始游戏
-  ctx.command('blackJack.开始游戏', '开始游戏').action(async ({ session }) => {
-    const { guildId, userId } = session;
+  ctx.command('blackJack.开始游戏', '开始游戏').action(async ({session}) => {
+    const {guildId, userId} = session;
 
     // 检查游戏状态，如果游戏状态不在未开始，则说明已经开始，无需开始
-    const gameInfo = await ctx.database.get('blackjack_game_record', { guildId });
+    const gameInfo = await ctx.database.get('blackjack_game_record', {guildId});
 
     // 没有游戏状态，说明游戏还无人加入
     if (gameInfo.length === 0) {
       // 如果当前群组没有游戏信息，新建一个
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return '没人怎么玩呀~';
     }
     // 检测游戏状态，如果不等于 未开始，则说明游戏已经开始，不能再开始
@@ -368,7 +404,7 @@ export function apply(ctx: Context, config: Config) {
       return '已经开始了哦，待会儿记得来呀~';
     }
     // 那么现在检查游戏中人数是否至少有一个
-    const getPlayers = await ctx.database.get('blackjack_playing_record', { guildId })
+    const getPlayers = await ctx.database.get('blackjack_playing_record', {guildId})
     // 获取当前玩家数量
     const numberOfPlayers = getPlayers.length
     if (numberOfPlayers === 0) {
@@ -380,7 +416,7 @@ export function apply(ctx: Context, config: Config) {
       `好像没人玩呀！` // 好像有点多余
     }
     // 切换游戏状态
-    await ctx.database.set('blackjack_game_record', { guildId }, { gameStatus: '投注时间' })
+    await ctx.database.set('blackjack_game_record', {guildId}, {gameStatus: '投注时间'})
     // 那么现在，能够确保人数至少够了，接下来打乱玩家顺序，并用序号一一对应，可以用序号索引到对应的userId和usrname
     // 但是，如果人数只有一个人，那就不用打乱了对吧
     // 解决报错： TypeError: Cannot read properties of undefined (reading 'push')
@@ -395,7 +431,10 @@ export function apply(ctx: Context, config: Config) {
       await Promise.all(
         shuffledPlayers.map(async (player, index) => {
           const playerIndex = index + 1;
-          await ctx.database.set('blackjack_playing_record', { userId: player.userId, guildId: player.guildId }, { playerIndex, playerHandIndex: 1 });
+          await ctx.database.set('blackjack_playing_record', {
+            userId: player.userId,
+            guildId: player.guildId
+          }, {playerIndex, playerHandIndex: 1});
           shuffledPlayersWithIndex.push({
             index: playerIndex,
             player,
@@ -407,7 +446,9 @@ export function apply(ctx: Context, config: Config) {
         .map((item) => `${item.index}. 【${item.player.username ?? 'Unknown'}】`)
         .join('\n');
 
-      const prompt = `你们有 ${betMaxDuration} 秒钟的时间进行投注。
+      const prompt = `当前阶段为：【投注牌型】
+
+⌚️ 投注时间为：【${betMaxDuration}】秒！
 
 🎲 玩家序号：
 ${playerOrder}
@@ -422,24 +463,27 @@ ${playerOrder}
 6. 同花顺：庄家第一张牌与闲家前两张牌同花色且连号，倍数为 25。
 7. 同花三条：庄家第一张牌与闲家前两张牌同花色和点数，倍数为 50。
 
-  投注示例：投注 1 7 50
+投注示例：投注 1 7 50
 
-  投注格式：投注 [玩家序号] [类型] [金额]
+投注格式：投注 [玩家序号] [类型] [金额]
 
-  其他可选操作：【跳过投注】
+其他可选操作：【跳过投注】
 
-  【跳过投注】：闲家发送此操作可直接进入下一阶段。`
+【跳过投注】：闲家发送此操作可直接进入下一阶段。`
 
       await session.send(` 游戏开始！
 ${(enableCardBetting) ? prompt : ''}
-⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
+⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌
 
-${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮牌！` : ''}`)
+${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄家亮牌！` : ''}`)
 
     } else if (numberOfPlayers === 1) {
-      await ctx.database.set('blackjack_playing_record', { userId, guildId }, { playerIndex: 1, playerHandIndex: 1 })
+      await ctx.database.set('blackjack_playing_record', {userId, guildId}, {playerIndex: 1, playerHandIndex: 1})
       const player = getPlayers[0]
-      const prompt = `你有 ${betMaxDuration} 秒的时间进行投注。
+      const prompt = `当前阶段为：【投注牌型】
+
+⌚️ 投注时间为：【${betMaxDuration}】秒！
+
 🎲 玩家序号：
 1. 【${player.username}】
 
@@ -451,18 +495,20 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
 5. 三条：庄家第一张牌与闲家前两张牌同点数，倍数为 25。
 6. 同花顺：庄家第一张牌与闲家前两张牌同花色且连号，倍数为 25。
 7. 同花三条：庄家第一张牌与闲家前两张牌同花色和点数，倍数为 50。
-  投注示例：投注 1 7 50
-  投注格式：投注 [玩家序号] [类型] [金额]
-  其他可选操作：跳过投注
-  【跳过投注】：闲家发送此操作可直接进入下一阶段。`
+
+投注示例：投注 1 7 50
+投注格式：投注 [玩家序号] [类型] [金额]
+其他可选操作：跳过投注
+【跳过投注】：闲家发送此操作可直接进入下一阶段。`
 
       // 人数为 1 的时候，新的提示词
-      await session.send(`欢迎来到黑杰克的世界！
+      await session.send(`【@${player.username}】
+欢迎来到黑杰克的世界！
 你是今天唯一的挑战者，你敢和我赌一把吗？
 ${(enableCardBetting) ? prompt : ''}
-⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌。
+⚠️ 注意：该局游戏使用【${numberOfDecks}】副扑克牌
 
-${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮牌！` : ''}`)
+${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄家亮牌！` : ''}`)
     }
 
     if (!enableCardBetting || !enableSurrender) {
@@ -471,7 +517,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     if (enableCardBetting) {
       // 现在是投注时间
       // 先把游戏状态更新成 投注时间
-      await ctx.database.set('blackjack_game_record', { guildId }, { gameStatus: '投注时间' })
+      await ctx.database.set('blackjack_game_record', {guildId}, {gameStatus: '投注时间'})
 
       // 投注时间
 
@@ -480,10 +526,10 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
         let timeout = 0;
 
         while (gameStatus === '投注时间' && timeout < betMaxDuration) {
-          const result = await ctx.database.get('blackjack_game_record', { guildId });
+          const result = await ctx.database.get('blackjack_game_record', {guildId});
           gameStatus = result[0].gameStatus;
           timeout += 1;
-          await sleep(1 * 1000);
+          await sleep(1000);
         }
 
         return gameStatus;
@@ -491,7 +537,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
 
       const gameStatus = await getGameStatus();
       if (gameStatus === '投注时间') {
-        await ctx.database.set('blackjack_game_record', { guildId }, { gameStatus: '投注时间结束' })
+        await ctx.database.set('blackjack_game_record', {guildId}, {gameStatus: '投注时间结束'})
         await session.send(`投注时间已到，下一阶段开始！`)
       }
     }
@@ -515,14 +561,16 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     const dealtCardToPunter = await dealCards(guildId, shuffledDeck);
 
     // 现在开始可以投降了，
-    await ctx.database.set('blackjack_game_record', { guildId }, {
+    await ctx.database.set('blackjack_game_record', {guildId}, {
       deck: shuffledDeck, canSurrender: true, currentPlayerIndex: 1, currentPlayerUserId: betPlayer.userId,
       currentPlayerUserName: betPlayer.username, gameStatus: '已开始', currentPlayerHandIndex: 1
     })
     if (enableSurrender) {
       // 先为庄家发一张牌，然后给玩家选择是否投降的时间
-      await session.send(`庄家亮牌【${dealtCardToBanker}】，点数为 ${calculateScore(dealtCardToBanker)}。
-投降倒计时开始，所有玩家将在 ${surrenderMaxDuration} 秒内选择是否投降。
+      await session.send(`庄家亮牌：【${dealtCardToBanker}】
+点数为：【${calculateScore(dealtCardToBanker)}】
+投降倒计时开始！
+玩家可以在【${surrenderMaxDuration}】秒内选择是否投降！
 【投降】：退回半注。
 【跳过投降】：直接进入下一阶段。`)
 
@@ -532,7 +580,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
 
         while (gameCanSurrender === true && timeout < surrenderMaxDuration) {
           try {
-            const [result] = await ctx.database.get('blackjack_game_record', { guildId });
+            const [result] = await ctx.database.get('blackjack_game_record', {guildId});
             gameCanSurrender = result.canSurrender;
             timeout += 1;
             await sleep(1 * 1000);
@@ -547,29 +595,33 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
 
       const gameCanSurrender = await getgameCanSurrender();
       if (gameCanSurrender === true) {
-        await ctx.database.set('blackjack_game_record', { guildId }, { canSurrender: false })
+        await ctx.database.set('blackjack_game_record', {guildId}, {canSurrender: false})
         await session.send(`投降已截止，下一阶段开始！`)
       }
 
       // 判断游戏在投降之后是否已经结束
-      const result = await ctx.database.get('blackjack_game_record', { guildId })
+      const result = await ctx.database.get('blackjack_game_record', {guildId})
       if (result.length === 0) {
         return
       }
     }
 
     // 更新庄家的手牌
-    await ctx.database.set('blackjack_game_record', { guildId }, { bankerHand: [`${dealtCardToBanker}`] })
+    await ctx.database.set('blackjack_game_record', {guildId}, {bankerHand: [`${dealtCardToBanker}`]})
     // 为第一位玩家更新手牌
-    await ctx.database.set('blackjack_playing_record', { guildId, userId: betPlayer.userId }, { playerHand: [`${dealtCardToPunter}`], playerHandIndex: 1 })
+    await ctx.database.set('blackjack_playing_record', {
+      guildId,
+      userId: betPlayer.userId
+    }, {playerHand: [`${dealtCardToPunter}`], playerHandIndex: 1})
     // 如果庄家第一张牌是 A，则可买保险
     if (calculateScore(dealtCardToBanker) === 11) {
       // 将买保险的开关打开
-      await ctx.database.set('blackjack_game_record', { guildId }, { canBuyInsurance: true })
+      await ctx.database.set('blackjack_game_record', {guildId}, {canBuyInsurance: true})
 
-      await session.send(`庄家亮牌【${dealtCardToBanker}】
-点数为【11】点！
-买保险倒计时开始，所有玩家将在 ${buyInsuranceMaxDuration} 秒内选择是否买保险。
+      await session.send(`庄家亮牌：【${dealtCardToBanker}】
+点数为：【11】点！
+买保险倒计时开始！
+玩家可以在【${buyInsuranceMaxDuration}】秒内选择是否买保险！
 【买保险】：花费半注，若庄家21点则获得双倍赔偿，否则损失半注。
 【跳过买保险】：直接进入下一阶段。`)
 
@@ -579,7 +631,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
         let timeout = 0;
 
         while (gameCanBuyInsurance === true && timeout < buyInsuranceMaxDuration) {
-          const result = await ctx.database.get('blackjack_game_record', { guildId });
+          const result = await ctx.database.get('blackjack_game_record', {guildId});
           gameCanBuyInsurance = result[0].canBuyInsurance;
           timeout += 1;
           await sleep(1 * 1000);
@@ -590,39 +642,41 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
 
       const gameCanBuyInsurance = await getGameCanBuyInsurance();
       if (gameCanBuyInsurance === true) {
-        await ctx.database.set('blackjack_game_record', { guildId }, { canBuyInsurance: false })
-        await session.send(`保险已截止，决战即刻开始！`)
+        await ctx.database.set('blackjack_game_record', {guildId}, {canBuyInsurance: false})
+        await session.send(`保险已截止，游戏正式开始！`)
       }
       const betPlayerName = betPlayer.username
-      return `【${betPlayerName}】
-你的第一张牌是：【${dealtCardToPunter}】
-请选择：
+      return `第一位玩家是：【@${betPlayerName}】
+您的第一张牌为：【${dealtCardToPunter}】
+您当前的点数为：【${calculateScore(dealtCardToPunter)}】
+🤔 你还想要再拿一张牌吗？记住哦，如果超过21点就会爆掉哦~
+请选择您的操作：
 【要牌】或【停牌】`
     }
     // 万事具备
     return `庄家亮牌：【${dealtCardToBanker}】
-点数：【${calculateScore(dealtCardToBanker)}】点！
+点数为：【${calculateScore(dealtCardToBanker)}】
 
-【${betPlayer.username}】
-你的手牌：【${dealtCardToPunter}】
-点数：【${calculateScore(dealtCardToPunter)}】点！
-
-请选择：
+第一位玩家是：【@${betPlayer.username}】
+您的第一张手牌为：【${dealtCardToPunter}】
+您当前的点数为：【${calculateScore(dealtCardToPunter)}】
+🤔 你还想要再拿一张牌吗？记住哦，如果超过21点就会爆掉哦~
+请选择您的操作：
 【要牌】或【停牌】`
   });
 
 
   // tx*
-  ctx.command('blackJack.投降', '投降').action(async ({ session }) => {
+  ctx.command('blackJack.投降', '投降').action(async ({session}) => {
     if (!enableSurrender) {
       return `投降功能已关闭。`
     }
-    const { guildId, userId, user, username } = session
+    const {guildId, userId, user, username} = session
     // 检查游戏信息是否存在
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
       // 顺手新建一个初始化的游戏信息
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `哼~ 最看不起投降的人了！`
     }
     // 游戏信息看看游戏状态
@@ -631,7 +685,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
       return `还没开始呢笨蛋，这么想投降啊？`
     }
     // 判断玩家是否在游戏中
-    const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+    const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
     if (getPlayer.length === 0) {
       return `你都没来陪我一起玩就想投降？`
     }
@@ -650,69 +704,71 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     // @ts-ignore
     const uid = user.id
     await ctx.monetary.gain(uid, refundAmount)
-    const [userMonetary] = await ctx.database.get('monetary', { uid });
-    await ctx.database.set('blackjack_playing_record', { guildId, userId }, { isSurrender: true })
+    const [userMonetary] = await ctx.database.get('monetary', {uid});
+    await ctx.database.set('blackjack_playing_record', {guildId, userId}, {isSurrender: true})
     const theGameResult = await isGameEnded(guildId)
 
     // 判断玩家是否已全部投降
     if ((gameInfo.currentPlayerIndex === player.playerIndex) && theGameResult) {
-      await ctx.database.remove('blackjack_playing_record', { guildId });
-      await ctx.database.remove('blackjack_game_record', { guildId });
+      await ctx.database.remove('blackjack_playing_record', {guildId});
+      await ctx.database.remove('blackjack_game_record', {guildId});
       return `游戏还未开始，你们却都投降了，我感到失望。算了，游戏就此结束，祝你们好运。`
     }
 
-    return `【${username}】投降，
-本轮损失【${refundAmount}】个通用货币，
-剩余【${userMonetary.value}】个。`
+    return `【@${username}】
+您投降惹~
+损失货币：【${refundAmount}】
+您当前的余额为：【${userMonetary.value}】`
   })
   // ck* r*
-  ctx.command('blackJack.重新开始', '重新开始').action(async ({ session }) => {
+  ctx.command('blackJack.重新开始', '重新开始').action(async ({session}) => {
     // 什么都不管，先重开了再说
-    const { guildId, bot, platform } = session
+    const {guildId, bot, platform} = session
     // 如果游戏未开始，把钱退给他们
     // 检查游戏信息是否存在
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
       // 顺手新建一个初始化的游戏信息
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `现在的情况根本没必要重新开始嘛！`
     }
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus === '未开始') {
       // 退钱
-      const getPlayers = await ctx.database.get('blackjack_playing_record', { guildId })
+      const getPlayers = await ctx.database.get('blackjack_playing_record', {guildId})
       for (const player of getPlayers) {
         const uid = (await ctx.database.getUser(platform, player.userId)).id
         await ctx.monetary.gain(uid, player.bet)
       }
-      await ctx.database.remove('blackjack_playing_record', { guildId })
-      await ctx.database.remove('blackjack_game_record', { guildId })
+      await ctx.database.remove('blackjack_playing_record', {guildId})
+      await ctx.database.remove('blackjack_game_record', {guildId})
       return `哼，既然游戏还没开始的话，只好把钱退给你们咯~`
     }
-    await ctx.database.remove('blackjack_playing_record', { guildId })
-    await ctx.database.remove('blackjack_game_record', { guildId })
+    await ctx.database.remove('blackjack_playing_record', {guildId})
+    await ctx.database.remove('blackjack_game_record', {guildId})
     return `你们失败了，只能重新开始了~ 你们的钱就拜拜了~ 哈哈~`
   })
 
   // tz*
   // 投注 玩家序号 投注类型 投注金额
-  ctx.command('blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]', '投注牌型').action(async ({ session }, playerIndex, betType, betAmount) => {
+  ctx.command('blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]', '投注牌型').action(async ({session}, playerIndex, betType, betAmount) => {
     if (!enableCardBetting) {
       return `投注牌型功能已关闭。`
     }
     // 检查参数是否都存在
     if (!playerIndex || !betType || !betAmount) {
-      return `请输入投注信息，格式如下：
+      return `【@${session.username}】
+请输入投注信息，格式如下：
 投注 [玩家序号] [牌型] [金额]
 示例：投注 1 7 50`
     }
-    const { guildId, userId, user, username } = session
+    const {guildId, userId, user, username} = session
     // 假如参数都存在，那么需要判断游戏状态是不是在 投注时间
     // 不需要检查是否存在游戏信息
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
       // 顺手创建
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `开始游戏之后才能投注呢~`
     }
     const gameInfo = getGameInfo[0]
@@ -720,9 +776,9 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
       return `现在不在投注时间哦~`
     }
     let betPlayer: Pick<BlackJackPlayingRecord, Keys<BlackJackPlayingRecord, any>>;
-    const getPlayers = await ctx.database.get('blackjack_playing_record', { guildId })
+    const getPlayers = await ctx.database.get('blackjack_playing_record', {guildId})
     const numberOfPlayers = getPlayers.length
-    const getThisPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+    const getThisPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
     if (getThisPlayer.length === 0) {
       return `加入游戏才可以投注！`
     }
@@ -736,7 +792,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     if (numberOfPlayers === 1) {
       betPlayer = getPlayers[0]
     } else {
-      const getBetPlayer = await ctx.database.get('blackjack_playing_record', { guildId, playerIndex })
+      const getBetPlayer = await ctx.database.get('blackjack_playing_record', {guildId, playerIndex})
       betPlayer = getBetPlayer[0]
     }
     const cardTypes: { [key: number]: string } = {
@@ -748,9 +804,11 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
       6: "同花顺",
       7: "同花三条",
     };
+
     function getCardType(number: number): string {
       return cardTypes[number] || "未知牌型";
     }
+
     const betTypeNumber = Number(betType);
     if (!isNaN(betTypeNumber) && betTypeNumber >= 1 && betTypeNumber <= 8) {
       betType = getCardType(betTypeNumber)
@@ -767,7 +825,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     // 检查投注牌型的玩家是否有足够的货币押注
     // @ts-ignore
     const uid = user.id;
-    const [userMonetary] = await ctx.database.get('monetary', { uid });
+    const [userMonetary] = await ctx.database.get('monetary', {uid});
 
     if (userMonetary.value < betAmount) {
       return `你怎么这么穷惹~ 没钱了啦！\n你当前的货币数额为：【${userMonetary.value}】个。`;
@@ -775,7 +833,12 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
 
     await ctx.monetary.cost(uid, betAmount);
     // 花了钱，那么，就为该玩家更新游玩信息吧
-    await ctx.database.set('blackjack_playing_record', { guildId, userId }, { betPlayerUserId: betPlayer.userId, betPlayerUserName: betPlayer.username, betType, betAmount })
+    await ctx.database.set('blackjack_playing_record', {guildId, userId}, {
+      betPlayerUserId: betPlayer.userId,
+      betPlayerUserName: betPlayer.username,
+      betType,
+      betAmount
+    })
 
     // 根据 betType 获取倍率信息
     enum CardType {
@@ -813,29 +876,32 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     const multiplier = getCardTypeMultiplier(betType);
 
     // 搞定之后，返回信息
-    return `【${username}】投注【${betType}】（${multiplier}倍）牌型！
-对【${betPlayer.username}】手牌投注【${betAmount}】！`
+    return `【@${username}】
+投注成功！
+您投注了【${betType}】（${multiplier}倍）牌型！
+投注对象为：【@${betPlayer.username}】
+投注金额：【${betAmount}】`
   })
 
   // tg*
   ctx.command('blackJack.跳过投注', '跳过投注牌型的等待时间')
-    .action(async ({ session }) => {
+    .action(async ({session}) => {
       if (!enableCardBetting) {
         return `投注牌型功能已关闭。`
       }
-      const { guildId, userId, username, user } = session;
+      const {guildId, userId, username, user} = session;
 
       // 判断该玩家有没有加入过游戏
-      const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+      const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
       if (getPlayer.length === 0) {
         return `不加入怎么用指令呢~`
       }
       // 查询当前群组的游戏记录
-      let gameRecord = await ctx.database.get('blackjack_game_record', { guildId });
+      let gameRecord = await ctx.database.get('blackjack_game_record', {guildId});
 
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
-        await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+        await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
         return `笨蛋~ 还没开始呢！`
       }
 
@@ -846,26 +912,26 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
         return `现在不在投注时间哦~`;
       }
 
-      await ctx.database.set('blackjack_game_record', { guildId }, { gameStatus: '投注时间结束' })
+      await ctx.database.set('blackjack_game_record', {guildId}, {gameStatus: '投注时间结束'})
 
       return `玩家【${username}】执行【跳过投注】操作，【投注】通道已关闭！`
     });
   // tgmbx*
   ctx.command('blackJack.跳过买保险', '跳过买保险的等待时间')
-    .action(async ({ session }) => {
-      const { guildId, userId, username, user } = session;
+    .action(async ({session}) => {
+      const {guildId, userId, username, user} = session;
 
       // 判断该玩家有没有加入过游戏
-      const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+      const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
       if (getPlayer.length === 0) {
         return `你不在游戏里的说...`
       }
       // 查询当前群组的游戏记录
-      let gameRecord = await ctx.database.get('blackjack_game_record', { guildId });
+      let gameRecord = await ctx.database.get('blackjack_game_record', {guildId});
 
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
-        await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+        await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
         return `游戏还没开始呢！`
       }
 
@@ -876,29 +942,31 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
         return `现在可买不了保险~`;
       }
 
-      await ctx.database.set('blackjack_game_record', { guildId }, { canBuyInsurance: false })
+      await ctx.database.set('blackjack_game_record', {guildId}, {canBuyInsurance: false})
 
-      return `玩家【${username}】执行【跳过买保险】操作，【买保险】通道已关闭！`
+      return `【@${username}】
+您执行了【跳过买保险】操作！
+【买保险】通道已关闭！`
     });
   // tgtx*
   ctx.command('blackJack.跳过投降', '跳过投降的等待时间')
-    .action(async ({ session }) => {
+    .action(async ({session}) => {
       if (!enableSurrender) {
         return `投降功能已关闭。`
       }
-      const { guildId, userId, username, user } = session;
+      const {guildId, userId, username, user} = session;
 
       // 判断该玩家有没有加入过游戏
-      const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+      const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
       if (getPlayer.length === 0) {
         return `你还不在游戏里面哦~`
       }
       // 查询当前群组的游戏记录
-      let gameRecord = await ctx.database.get('blackjack_game_record', { guildId });
+      let gameRecord = await ctx.database.get('blackjack_game_record', {guildId});
 
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
-        await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+        await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
         return `还没开始呢！`
       }
 
@@ -909,17 +977,19 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
         return `还没到可以跳过的时候呢~`;
       }
 
-      await ctx.database.set('blackjack_game_record', { guildId }, { canSurrender: false })
+      await ctx.database.set('blackjack_game_record', {guildId}, {canSurrender: false})
 
-      return `玩家【${username}】执行【跳过投降】操作，【投降】通道已关闭！`
+      return `【@${username}】
+您执行了【跳过投降】操作！
+【投降】通道已关闭！`
     });
 
   // bx*
   // 注册买保险的指令
-  ctx.command('blackJack.买保险', '买保险').action(async ({ session }) => {
-    const { guildId, userId, username } = session
+  ctx.command('blackJack.买保险', '买保险').action(async ({session}) => {
+    const {guildId, userId, username} = session
     // 检查玩家信息，查看该玩家是否加入游戏
-    const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+    const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
     if (getPlayer.length === 0) {
       return `想买保险？先加入游戏再说！笨蛋~`
     }
@@ -929,11 +999,11 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
       return `买一次就够了，笨蛋！而且只能买一次好不好！`
     }
     // 检查游戏状态，如果游戏已开始，且买保险开关打开，则可以继续
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     // 是否需要检查这个群组是否存在游戏
     if (getGameInfo.length === 0) {
       // 顺手创建
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `游戏还没开始呢~ 买不了保险的说...`
     }
     // 检查游戏状态和买保险开关
@@ -946,21 +1016,27 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     }
 
     // 在游戏里，保险开关打开，游戏已正式开始
-    await ctx.database.set('blackjack_playing_record', { guildId, userId }, { isBuyInsurance: true, bet: player.bet / 2, insurance: player.bet / 2 })
-    return `玩家【${username}】成功买到保险，祝你好运，朋友！`
+    await ctx.database.set('blackjack_playing_record', {guildId, userId}, {
+      isBuyInsurance: true,
+      bet: player.bet / 2,
+      insurance: player.bet / 2
+    })
+    return `【@${username}】
+成功买到保险！
+祝你好运，朋友！`
   })
 
   // yp*
   // 要牌
-  ctx.command('blackJack.要牌', '要一张牌').action(async ({ session }) => {
+  ctx.command('blackJack.要牌', '要一张牌').action(async ({session}) => {
     // 处理分牌：如果 handindex > 1 且 第一张手牌为 A，只获发一张牌
     // 处理加倍：如果状态为已加倍，更改已要牌 判断是否已要牌
     // 想要要一张牌，首先要游戏开始、在游戏中、轮到该玩家要牌、是否投降、如果投降的话直接为下一位发牌
     // 检查游戏是否开始
-    const { guildId, userId, username, platform } = session
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const {guildId, userId, username, platform} = session
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `游戏还没开始呢！`
     }
     const gameInfo = getGameInfo[0]
@@ -968,7 +1044,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
       return `游戏还没开始哦~`
     }
     // 检查玩家是否在游戏中
-    const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+    const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
     if (getPlayer.length === 0) {
       return `笨蛋，你不在游戏里面！`
     }
@@ -991,7 +1067,7 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
       return `你已经不能再要牌惹！不许贪心~`
     }
     if (getPlayer.length > 1 && calculateScore(player.playerHand[0]) === 11 && player.playerHand.length === 2) {
-      return `A 分牌仅可获发 1 张牌，不可再要牌！`
+      return `A 分牌仅可获发 1 张牌，不可以再要牌了哦！`
     }
     // 要牌要做什么：获取牌堆，发一张牌，更新牌堆、计算点数、判断是否是两张牌、两张牌是对子的话可以分牌、若两张牌点数之和是11则可以选择是否加倍
     // 判断是否爆牌或者是否为21点，如果为21点，再判断是否为黑杰克，如果爆牌就下一位
@@ -1000,47 +1076,60 @@ ${(!enableCardBetting || !enableSurrender) ? `为庄家发牌...\n\n请庄家亮
     // await ctx.database.set('blackjack_game_record', { guildId }, { canSurrender: false })
 
     if (player.afterDoublingTheBet === '已加倍') {
-      await ctx.database.set('blackjack_playing_record', { userId, guildId, playerHandIndex: gameInfo.currentPlayerHandIndex }, { afterDoublingTheBet: '已要牌' })
+      await ctx.database.set('blackjack_playing_record', {
+        userId,
+        guildId,
+        playerHandIndex: gameInfo.currentPlayerHandIndex
+      }, {afterDoublingTheBet: '已要牌'})
     }
     const deck = gameInfo.deck;
     let playerHand: string[] = player.playerHand; // 使用解构复制来创建 playerHand 的副本
 
     const dealtCardToPunter: string = await dealCards(guildId, deck);
-    await ctx.database.set('blackjack_game_record', { guildId }, { deck })
+    await ctx.database.set('blackjack_game_record', {guildId}, {deck})
     playerHand.push(dealtCardToPunter); // 将 dealtCardToPunter 添加到 playerHand 中
-    await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex }, { playerHand })
+    await ctx.database.set('blackjack_playing_record', {
+      guildId,
+      userId,
+      playerHandIndex: gameInfo.currentPlayerHandIndex
+    }, {playerHand})
     const score = calculateHandScore(playerHand)
     const isHandPair = isPair(playerHand)
     // 爆牌或21
     if (score >= 21) {
-      await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex }, { isOver: true })
+      await ctx.database.set('blackjack_playing_record', {
+        guildId,
+        userId,
+        playerHandIndex: gameInfo.currentPlayerHandIndex
+      }, {isOver: true})
       // 如果游戏结束，那么接下来就是为庄家发牌并结算
       if (await isGameEnded(guildId)) {
-        await session.send(`【${username}】，
-你的手牌是：【${playerHand.join('')}】，
+        await session.send(`当前玩家是：【@${username}】
+您的手牌为：【${playerHand.join('')}】
+您当前的点数为：【${score}】
 
-点数为【${score}】。
+${score > 21 ? '💥 爆掉了！很遗憾，你输了！下次要小心点哦~' : ((playerHand.length === 2) ? '🎴 黑杰克！赢！运气爆棚了呢~' : '✌️ 21点！恭喜你，距离胜利只差一步之遥了呢~')}
 
-${score > 21 ? '爆牌！' : ((playerHand.length === 2) ? '黑杰克！' : '21点！')}
-
-玩家回合结束，庄家正在补牌...`)
+玩家回合结束！
+庄家正在补牌...`)
         await sleep(dealerSpeed * 1000)
         let bankerHand: string[] = gameInfo.bankerHand;
+
         async function bankerPlayGame(guildId: string, deck: string[]): Promise<void> {
           const dealtCardToBanker = await dealCards(guildId, deck);
           bankerHand.push(dealtCardToBanker);
           const bankerScore = calculateHandScore(bankerHand);
 
           await sleep(dealerSpeed * 1000)
-          await session.send(`庄家摸牌...
-手牌：【${bankerHand.join('')}】，
-点数为【${bankerScore}】点！
-${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
+          await session.send(`庄家摸牌！
+庄家的手牌为：【${bankerHand.join('')}】，
+庄家当前的点数为：【${bankerScore}】点！
+${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '✌️ 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~' : '\n见好就收咯！'}`);
 
           if (bankerScore < 17) {
             await bankerPlayGame(guildId, deck);
           } else {
-            await ctx.database.set('blackjack_game_record', { guildId }, { bankerHand })
+            await ctx.database.set('blackjack_game_record', {guildId}, {bankerHand})
           }
         }
 
@@ -1048,68 +1137,75 @@ ${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScor
         await bankerPlayGame(guildId, deck);
 
         await sleep(dealerSpeed * 1000)
-        return `游戏结算如下：
+        return `游戏结束！
+本局游戏结算中：
 ${(await settleBlackjackGame(platform, guildId))}
-感谢参与，祝好运！`
+祝你们好运！`
 
       }
       // 游戏没有结束 不需要去管 直接获取新的游戏信息即可 因为在 isendgame里面已经更新了
       // 获取更新后的游戏状态 获取新的玩家信息 根据玩家信息或游戏信息的 handindex 去安排是否提示 分牌信息
 
-      const [newGameInfo] = await ctx.database.get('blackjack_game_record', { guildId })
+      const [newGameInfo] = await ctx.database.get('blackjack_game_record', {guildId})
       const [newThisPlayerInfo] = await ctx.database.get('blackjack_playing_record', {
         guildId,
         playerIndex: newGameInfo.currentPlayerIndex,
         playerHandIndex: newGameInfo.currentPlayerHandIndex
       })
       const dealtCardToPunter = await dealCards(guildId, deck)
-      await ctx.database.set('blackjack_playing_record', { guildId, userId: newThisPlayerInfo.userId, playerHandIndex: newThisPlayerInfo.playerHandIndex }, { playerHand: [`${dealtCardToPunter}`] })
-      await ctx.database.set('blackjack_game_record', { guildId }, { deck })
-      const distributional = `${(newThisPlayerInfo.playerHand.length === 1) ? '但幸运的是，你还有机会！' : ''}
-你的手牌是：【${newThisPlayerInfo.playerHand.join('')}】
-你可以选择：
+      await ctx.database.set('blackjack_playing_record', {
+        guildId,
+        userId: newThisPlayerInfo.userId,
+        playerHandIndex: newThisPlayerInfo.playerHandIndex
+      }, {playerHand: [`${dealtCardToPunter}`]})
+      await ctx.database.set('blackjack_game_record', {guildId}, {deck})
+      const distributional = `${(newThisPlayerInfo.playerHand.length === 1) ? '但幸运的是，您还有机会！' : ''}
+您的手牌为：【${newThisPlayerInfo.playerHand.join('')}】
+请选择您的操作：
 ${(newThisPlayerInfo.playerHand.length === 1) ? '【要牌】🃏' : ''}${(isHandPair) ? '\n【分牌】👥' : ''}${(score === 11 && playerHand.length === 2) ? '\n【加倍】💰' : ''}
 【停牌】🛑
 
 ${(isHandPair) ? `【分牌】：把一对牌分成两手，再下一注。
-注意：如果是两张A，每手只能再要一张。`: ''}
+注意：如果是两张A，每手只能再要一张。` : ''}
 ${(score === 11 && playerHand.length === 2) ? `【加倍】：加倍下注，只能再要一张。` : ''}`
 
-      const noDistributional = `有请下一位玩家【${newThisPlayerInfo.username}】！🎉
-你的手牌是：【${dealtCardToPunter}】
-你可以选择：
-【要牌】、【停牌】${(isHandPair) ? '、【分牌】' : ''}${(score === 11 && playerHand.length === 2) ? '或【加倍】' : ''}
+      const noDistributional = `有请下一位玩家：【@${newThisPlayerInfo.username}】
+您的手牌为：【${dealtCardToPunter}】
+点数为：【${calculateScore(dealtCardToPunter)}】
+请选择您的操作：
+【要牌】或【停牌】${(isHandPair) ? '或【分牌】' : ''}${(score === 11 && playerHand.length === 2) ? '或【加倍】' : ''}
 ${(isHandPair) ? `【分牌】：分两手玩，每手下注相同。
-注意：如果分了两张A，每手只能再拿一张牌。`: ''}
+注意：如果分了两张A，每手只能再拿一张牌。` : ''}
 ${(score === 11 && playerHand.length === 2) ? `【加倍】：下注翻倍，只能再拿一张牌。` : ''}`
 
-      return `👋 【${username}】，
-你要了一张牌！
-你的手牌：【${playerHand.join('')}】，
-点数：【${score}】！
-${(score > 21) ? '😱 糟糕，你超过了 21，你爆了！' : ((playerHand.length === 2) ? '黑杰克！' : '21点！')}
+      return `【@${username}】
+👋 您要了一张牌！
+您的手牌为：【${playerHand.join('')}】
+您当前的点数为：【${score}】
+${(score > 21) ? '😱 糟糕，你超过了 21，你爆了！' : ((playerHand.length === 2) ? '🎴 黑杰克！' : '✌️ 21点！')}
 
 ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     }
     // 未爆牌：
     return `当前玩家是：【${username}】
-你要了一张牌！
-你的手牌：【${playerHand.join('')}】
-点数：【${score}】点！
-请选择你接下来的操作：
+您要了一张牌！
+您的手牌为：【${playerHand.join('')}】
+您当前的点数为：【${score}】点
+🤔 你还想要再拿一张牌吗？记住哦，如果超过21点就会爆掉哦~
+请选择您的操作：
 【要牌】或【停牌】${(isHandPair) ? '或【分牌】' : ''}${(score === 11 && playerHand.length === 2) ? '或【加倍】' : ''}
 ${(isHandPair) ? `【分牌】：再下原注，将牌分为两手。
-特殊情况：分开两张A后，每张A只能再要一张牌。`: ''}
+特殊情况：分开两张A后，每张A只能再要一张牌。` : ''}
 ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只能再拿一张牌。` : ''}`
   })
   // tp*
-  ctx.command('blackJack.停牌', '停止要牌').action(async ({ session }) => {
+  ctx.command('blackJack.停牌', '停止要牌').action(async ({session}) => {
     // 停牌：游戏开始、在游戏里、轮到你、没投降
     // 检查游戏是否开始
-    const { guildId, userId, username, platform } = session
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const {guildId, userId, username, platform} = session
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `游戏还没开始呢！`
     }
     const gameInfo = getGameInfo[0]
@@ -1117,7 +1213,7 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
       return `游戏还没开始哦~`
     }
     // 检查玩家是否在游戏中
-    const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+    const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
     if (getPlayer.length === 0) {
       return `笨蛋，你不在游戏里面！`
     }
@@ -1133,87 +1229,104 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
     if (player.isSurrender) {
       // 下一位：找到下一位没有投降的玩家、如果又都已经投降，那么直接结束游戏，如果没有，就更新游戏信息，为下一位玩家发牌并发送信息
       if (await isGameEnded(guildId)) {
-        return `你们全都放弃了，这太不可思议了，我无法理解。好吧，既然你们这么想，游戏就此终止，祝你们好运。`
+        return `你们全都放弃了，这太不可思议了，我无法理解。好吧，既然你们这么想，游戏就此终止，祝你们好运！`
       }
     }
     const deck = gameInfo.deck
-    const { playerHand } = player
+    const {playerHand} = player
     const score = calculateHandScore(playerHand)
     // 更新牌状态 isover
-    await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex }, { isOver: true })
+    await ctx.database.set('blackjack_playing_record', {
+      guildId,
+      userId,
+      playerHandIndex: gameInfo.currentPlayerHandIndex
+    }, {isOver: true})
     // 停牌之后游戏结束则直接结算，否则下一套牌或下一个玩家
     if (await isGameEnded(guildId)) {
-      await session.send(`【${username}】停牌，
-你的手牌是：【${playerHand.join('')}】，
-点数为【${score}】！
+      await session.send(`
+👌 停牌咯！看来你对自己的手牌很满意呢！
 
-玩家回合结束，庄家正在补牌中...`)
+当前玩家是：【@${username}】
+您的手牌为：【${playerHand.join('')}】
+您当前的点数为：【${score}】
+
+玩家回合结束！
+庄家正在补牌中...`)
       // 为庄家发一张牌 判断 继续发牌
       await sleep(dealerSpeed * 1000)
       let bankerHand: string[] = gameInfo.bankerHand;
+
       async function bankerPlayGame(guildId: string, deck: string[]): Promise<void> {
         const dealtCardToBanker = await dealCards(guildId, deck);
         bankerHand.push(dealtCardToBanker);
         const bankerScore = calculateHandScore(bankerHand);
         await sleep(dealerSpeed * 1000)
-        await session.send(`庄家摸牌...
-手牌：【${bankerHand.join('')}】，
-点数为【${bankerScore}】点！
-${(bankerScore > 21) ? '爆牌！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '黑杰克！' : ((bankerScore === 21) ? '21点！' : '')}${(bankerScore < 17) ? '\n再来！' : '\n收牌！'}`);
+        await session.send(`庄家摸牌！
+庄家的手牌为：【${bankerHand.join('')}】
+庄家当前的点数为【${bankerScore}】点
+${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '🎊 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~！' : '\n见好就收咯！！'}`);
 
         if (bankerScore < 17) {
           await bankerPlayGame(guildId, deck);
         } else {
-          await ctx.database.set('blackjack_game_record', { guildId }, { bankerHand })
+          await ctx.database.set('blackjack_game_record', {guildId}, {bankerHand})
         }
       }
 
       // 调用 bankerPlayGame 函数来为庄家开始游戏
       await bankerPlayGame(guildId, deck);
       await sleep(dealerSpeed * 1000)
-      return `游戏结算如下：
+      return `游戏结束！
+本局游戏结算中：
 ${(await settleBlackjackGame(platform, guildId))}
-感谢参与，祝好运！`
+祝你们好运！`
 
 
     }
     // 游戏没有结束 不需要去管 直接获取新的游戏信息即可 因为在 isendgame里面已经更新了
     // 获取更新后的游戏状态 获取新的玩家信息 根据玩家信息或游戏信息的 handindex 去安排是否提示 分牌信息
 
-    const [newGameInfo] = await ctx.database.get('blackjack_game_record', { guildId })
+    const [newGameInfo] = await ctx.database.get('blackjack_game_record', {guildId})
     const [newThisPlayerInfo] = await ctx.database.get('blackjack_playing_record', {
       guildId,
       playerIndex: newGameInfo.currentPlayerIndex,
       playerHandIndex: newGameInfo.currentPlayerHandIndex
     })
     const dealtCardToPunter = await dealCards(guildId, deck)
-    await ctx.database.set('blackjack_playing_record', { guildId, userId: newThisPlayerInfo.userId, playerHandIndex: newThisPlayerInfo.playerHandIndex }, { playerHand: [`${dealtCardToPunter}`] })
-    await ctx.database.set('blackjack_game_record', { guildId }, { deck })
+    await ctx.database.set('blackjack_playing_record', {
+      guildId,
+      userId: newThisPlayerInfo.userId,
+      playerHandIndex: newThisPlayerInfo.playerHandIndex
+    }, {playerHand: [`${dealtCardToPunter}`]})
+    await ctx.database.set('blackjack_game_record', {guildId}, {deck})
     const distributional = `${(newThisPlayerInfo.playerHand.length === 1) ? '检测到你还有牌可以要！' : ''}
-你的${(newThisPlayerInfo.playerHand.length === 1) ? '下一套' : ''}手牌为：【${newThisPlayerInfo.playerHand.join('')}】
-请选择你的操作：
+您的${(newThisPlayerInfo.playerHand.length === 1) ? '下一套' : ''}手牌为：【${newThisPlayerInfo.playerHand.join('')}】
+请选择您的操作：
 【要牌】或【停牌】`
 
-    const noDistributional = `接下来有请下一位玩家【${newThisPlayerInfo.username}】！
-你的第一张手牌为：【${dealtCardToPunter}】
-请选择你的操作：
+    const noDistributional = `接下来有请下一位玩家：
+【@${newThisPlayerInfo.username}】
+您的第一张手牌为：【${dealtCardToPunter}】
+您的点数为：【${calculateScore(dealtCardToPunter)}】
+请选择您的操作：
 【要牌】或【停牌】`
     // 下一套牌或下一位玩家
     return `当前玩家是：【${username}】
-你停牌了！看来你对你的手牌很满意嘛~
-你的手牌：【${playerHand.join('')}】
-点数：【${score}】点！
+👌 停牌咯！看来你对你的手牌很满意嘛~
+
+您的手牌为：【${playerHand.join('')}】
+您当前的点数为：【${score}】点
 
 ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
   })
   // fp*
-  ctx.command('blackJack.分牌', '将牌分为两手').action(async ({ session }) => {
+  ctx.command('blackJack.分牌', '将牌分为两手').action(async ({session}) => {
     // 分牌：游戏已经开始、玩家在游戏里、当前轮到这位玩家、判断该玩家是否投降、两张牌且是对子、检查钱是否够分牌、增加牌序
     // 检查游戏是否开始
-    const { guildId, userId, user, username } = session
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const {guildId, userId, user, username} = session
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `游戏还没开始呢！`
     }
     const gameInfo = getGameInfo[0]
@@ -1221,7 +1334,11 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       return `游戏还没开始哦~`
     }
     // 检查玩家是否在游戏中
-    const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex })
+    const getPlayer = await ctx.database.get('blackjack_playing_record', {
+      guildId,
+      userId,
+      playerHandIndex: gameInfo.currentPlayerHandIndex
+    })
     if (getPlayer.length === 0) {
       return `笨蛋，你不在游戏里面！`
     }
@@ -1239,41 +1356,49 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     }
     // @ts-ignore
     const uid = user.id;
-    const [userMonetary] = await ctx.database.get('monetary', { uid });
+    const [userMonetary] = await ctx.database.get('monetary', {uid});
     if (userMonetary.value < player.bet) {
-      return `你的货币只剩 ${userMonetary.value} 点，
+      return `【@${session.username}】
+您的剩余货币为： ${userMonetary.value}
 想要分牌赢大奖？🎁
-可惜，分牌要花 ${player.bet} 点。
-下次记得攒钱分牌哦！😉`
+可惜！
+分牌要花费货币：【${player.bet}】
+下次记得留钱分牌哦！😉`
     }
     const newPlayerHand1 = playerHand[0];
     const newPlayerHand2 = playerHand[1];
     // 需要更新之前的玩家手牌
-    await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex }, { playerHand: [`${newPlayerHand1}`] })
+    await ctx.database.set('blackjack_playing_record', {
+      guildId,
+      userId,
+      playerHandIndex: gameInfo.currentPlayerHandIndex
+    }, {playerHand: [`${newPlayerHand1}`]})
     // 分牌需要创建一个新的玩家牌手牌记录
     await ctx.database.create('blackjack_playing_record', {
       guildId, userId, bet: player.bet, playerHand: [`${newPlayerHand2}`], playerIndex: player.playerIndex,
       username, playerHandIndex: player.playerHandIndex + 1
     })
-    return `当前玩家是：【${username}】
+    return `当前玩家是：【@${username}】
 你分牌如刀，投注如雷，手气如火！🔥
 
-你的牌是：【${newPlayerHand1}】、【${newPlayerHand2}】
+您的手牌为：
+【${newPlayerHand1}】
+【${newPlayerHand2}】
 
-现在，你要对第一套牌做出选择。
-【停牌】？【要牌】！
+现在，请选择您对第一套牌的操作：
+【要牌】或【停牌】
 
 别忘了，你还有第二套牌在等你呢！😉`
   })
 
   // jb*
-  ctx.command('blackJack.加倍', '加倍投注').action(async ({ session }) => {
+  ctx.command('blackJack.加倍', '加倍投注').action(async ({session}) => {
     //  加倍：游戏已开始、在游戏里、没投降、牌为两张且点数为11、更新投注筹码、发送加倍提示
     // 检查游戏是否开始
-    const { guildId, userId, user, username } = session
-    const getGameInfo = await ctx.database.get('blackjack_game_record', { guildId })
+    const {guildId, userId, user, username} = session
+    const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
-      await ctx.database.create('blackjack_game_record', { guildId, gameStatus: '未开始' });
+      await ctx.database.create('blackjack_game_record', {guildId, gameStatus: '未开始'});
       return `游戏还没开始呢！`
     }
     const gameInfo = getGameInfo[0]
@@ -1281,7 +1406,11 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       return `游戏还没开始哦~`
     }
     // 检查玩家是否在游戏中
-    const getPlayer = await ctx.database.get('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex })
+    const getPlayer = await ctx.database.get('blackjack_playing_record', {
+      guildId,
+      userId,
+      playerHandIndex: gameInfo.currentPlayerHandIndex
+    })
     if (getPlayer.length === 0) {
       return `笨蛋，你不在游戏里面！`
     }
@@ -1300,27 +1429,36 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     // 更新筹码前首先要看当前玩家钱够不够
     // @ts-ignore
     const uid = user.id
-    const [userMonetary] = await ctx.database.get('monetary', { uid })
+    const [userMonetary] = await ctx.database.get('monetary', {uid})
     if (userMonetary.value < player.bet) {
-      return `你只有 ${userMonetary.value} 货币，无法支付加倍所需的【${player.bet}】货币！下次别忘存钱加倍呀！`
+      return `【@${username}】
+加倍失败了呢~
+您的余额为：【${userMonetary.value}】
+无法支付加倍所需货币：【${player.bet}】
+下次别忘存钱加倍呀！`
     }
     // 扣钱 更新记录
     await ctx.monetary.cost(uid, player.bet)
-    await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex: gameInfo.currentPlayerHandIndex }, { bet: player.bet * 2, afterDoublingTheBet: '已加倍' })
-    return `玩家【${username}】加倍成功！
-你的投注筹码已更新为：【${player.bet * 2}】个！
-你剩余的通用货币为：【${userMonetary.value - player.bet}】点！
+    await ctx.database.set('blackjack_playing_record', {
+      guildId,
+      userId,
+      playerHandIndex: gameInfo.currentPlayerHandIndex
+    }, {bet: player.bet * 2, afterDoublingTheBet: '已加倍'})
+    return `【@${username}】
+加倍成功！
+您的筹码已更新为：【${player.bet * 2}】
+您的余额为：【${userMonetary.value - player.bet}】
 
-你的手牌：【${playerHand.join('')}】
-点数：【${calculateHandScore(playerHand)}】点！
-请选择你接下来的操作：
+您的手牌为：【${playerHand.join('')}】
+您当前的点数为：【${calculateHandScore(playerHand)}】
+请选择您的操作：
 【要牌】或【停牌】
-【要牌】：你只能再要一张牌！`
+【要牌】：加倍后只能再要一张牌哦~`
   })
 
   async function settleBlackjackGame(platform, guildId) {
 
-    // 我们修复error：玩家分牌 
+    // 我们修复error：玩家分牌
     // 要个der的例牌
     // 黑杰克  21 点，但是赔率不一样
     // 结算：检查庄家是否爆牌，如果爆牌，则给未爆牌的玩家相应的赔金
@@ -1330,17 +1468,17 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     // 庄家没有黑杰克 比点数 1 赔
     // 结算保险
     // 结算牌型投注
-    const getGameRecords = await ctx.database.get('blackjack_game_record', { guildId });
+    const getGameRecords = await ctx.database.get('blackjack_game_record', {guildId});
     const bankerHand = getGameRecords[0].bankerHand;
     const bankerScore = calculateHandScore(bankerHand);
     // 庄家爆
     if (bankerScore > 21) {
-      const getPlayerRecords = await ctx.database.get('blackjack_playing_record', { guildId });
+      const getPlayerRecords = await ctx.database.get('blackjack_playing_record', {guildId});
 
       for (const record of getPlayerRecords) {
-        const { playerHand } = record;
+        const {playerHand} = record;
         const score = calculateHandScore(playerHand);
-        const { guildId, userId, playerHandIndex, bet } = record;
+        const {guildId, userId, playerHandIndex, bet} = record;
 
         const updateData = {};
 
@@ -1353,18 +1491,18 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           updateData['win'] = bet + bet;
         }
 
-        await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, updateData);
+        await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, updateData);
       }
     } else {
       // 庄家不爆
       // 庄家黑杰克
       if (bankerHand.length === 2 && bankerScore === 21) {
-        const getPlayerRecords = await ctx.database.get('blackjack_playing_record', { guildId });
+        const getPlayerRecords = await ctx.database.get('blackjack_playing_record', {guildId});
 
         for (const record of getPlayerRecords) {
-          const { playerHand } = record;
+          const {playerHand} = record;
           const score = calculateHandScore(playerHand);
-          const { guildId, userId, playerHandIndex, bet } = record;
+          const {guildId, userId, playerHandIndex, bet} = record;
           // 除了是黑杰克的平 其他没有黑杰克的全输
 
           const updateData = {};
@@ -1375,16 +1513,16 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
             updateData['win'] = -bet * 1.5 + bet;
           }
 
-          await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, updateData);
+          await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, updateData);
         }
       } else {
         // 庄家没有黑杰克 比大小 黑杰克1.5
-        const getPlayerRecords = await ctx.database.get('blackjack_playing_record', { guildId });
+        const getPlayerRecords = await ctx.database.get('blackjack_playing_record', {guildId});
 
         for (const record of getPlayerRecords) {
-          const { playerHand } = record;
+          const {playerHand} = record;
           const score = calculateHandScore(playerHand);
-          const { guildId, userId, playerHandIndex, bet } = record;
+          const {guildId, userId, playerHandIndex, bet} = record;
 
           const updateData = {};
 
@@ -1405,115 +1543,137 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
             updateData['win'] = bet;
           }
 
-          await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, updateData);
+          await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, updateData);
         }
       }
     }
     // 结算保险
     // 遍历所有玩家的投注一个一个来
-    const getPlayerRecords = await ctx.database.get('blackjack_playing_record', { guildId });
+    const getPlayerRecords = await ctx.database.get('blackjack_playing_record', {guildId});
     for (const record of getPlayerRecords) {
-      const { playerHand } = record;
-      let { guildId, userId, playerHandIndex, insurance, isBuyInsurance } = record;
+      const {playerHand} = record;
+      let {guildId, userId, playerHandIndex, insurance, isBuyInsurance} = record;
       // 庄家是黑杰克，获得两倍保险金 不是的话，直接没收保险金
       if (isBuyInsurance && bankerHand.length === 2 && bankerScore === 21) {
         insurance = insurance * 2
       } else if (isBuyInsurance) {
         insurance = 0
       }
-      await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { insurance })
+      await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {insurance})
     }
 
     // 结算投注牌型
     // 遍历所有玩家的投注一个一个来
     for (const record of getPlayerRecords) {
-      const { playerHand } = record;
+      const {playerHand} = record;
       const score = calculateHandScore(playerHand);
-      let { guildId, userId, playerHandIndex, betAmount, betPlayerUserId, betPlayerUserName, betType, betWin } = record;
+      let {guildId, userId, playerHandIndex, betAmount, betPlayerUserId, betPlayerUserName, betType, betWin} = record;
 
       // 如果投注类型是对子
       if (betType === '对子') {
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isBetPair(playerHand)) {
             betWin = betAmount * 5
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       } else if (betType === '同花对子') {
         // 如果投注类型是同花对子
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isFlushPair(playerHand)) {
             betWin = betAmount * 30
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       } else if (betType === '同花') {
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isSameSuitCombination(playerHand, bankerHand)) {
             betWin = betAmount * 5
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       } else if (betType === '顺') {
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isStraightCombination(playerHand, bankerHand)) {
             betWin = betAmount * 10
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       } else if (betType === '三条') {
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isThreeOfAKind(playerHand, bankerHand)) {
             betWin = betAmount * 25
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       } else if (betType === '同花顺') {
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isStraightFlush(playerHand, bankerHand)) {
             betWin = betAmount * 25
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       } else if (betType === '同花三条') {
-        const getBetPlayers = await ctx.database.get('blackjack_playing_record', { guildId, userId })
+        const getBetPlayers = await ctx.database.get('blackjack_playing_record', {guildId, userId})
         for (const betPlayer of getBetPlayers) {
-          const { playerHand } = betPlayer
+          const {playerHand} = betPlayer
           if (isFlushThreeOfAKind(playerHand, bankerHand)) {
             betWin = betAmount * 50
-            await ctx.database.set('blackjack_playing_record', { guildId, userId, playerHandIndex }, { betAmount: 0, betWin })
+            await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, {
+              betAmount: 0,
+              betWin
+            })
           }
         }
       }
     }
     // 开始结算加钱 暂时不生成最终字符串
-    const getThisGuildPlayers = await ctx.database.get('blackjack_playing_record', { guildId })
+    const getThisGuildPlayers = await ctx.database.get('blackjack_playing_record', {guildId})
     for (const thisGuildPlayer of getThisGuildPlayers) {
-      const { isSurrender, win, bet, insurance, betWin, userId } = thisGuildPlayer
+      const {isSurrender, win, bet, insurance, betWin, userId} = thisGuildPlayer
       // 先不还钱了，允许货币是负的
       // bet 正负、win、保险、betwin
       // 如果这个人没有投降
       if (!isSurrender) {
-        // 计算赢得或赔付的金额 settlement 与货币数据记录 进行加法 
+        // 计算赢得或赔付的金额 settlement 与货币数据记录 进行加法
         const settlement = win + insurance + betWin
         const uid = (await ctx.database.getUser(platform, userId)).id
-        const [userMonetary] = await ctx.database.get('monetary', { uid })
+        const [userMonetary] = await ctx.database.get('monetary', {uid})
         const value = settlement + userMonetary.value
-        await ctx.database.set('monetary', { uid }, { value })
+        await ctx.database.set('monetary', {uid}, {value})
       }
     }
+
     function getSettlementInfo(guildId: string): string {
       const players = getThisGuildPlayers.filter(player => player.guildId === guildId);
       const mergedRecords: { [key: string]: number } = {};
@@ -1542,13 +1702,14 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 
 
     const settlementInfo = getSettlementInfo(guildId);
-    await ctx.database.remove('blackjack_playing_record', { guildId })
-    await ctx.database.remove('blackjack_game_record', { guildId })
+    await ctx.database.remove('blackjack_playing_record', {guildId})
+    await ctx.database.remove('blackjack_game_record', {guildId})
     return settlementInfo
 
   }
+
   async function isGameEnded(guildId: string): Promise<boolean> {
-    const playingRecords = await ctx.database.get('blackjack_playing_record', { guildId });
+    const playingRecords = await ctx.database.get('blackjack_playing_record', {guildId});
 
     const filteredPlayers = playingRecords.filter(player => !player.isOver);
     const sortedPlayers = filteredPlayers.sort((a, b) =>
@@ -1565,13 +1726,17 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 
     if (nextPlayer) {
       // 找到了下一个未投降的玩家，进行相应的逻辑处理
-      await ctx.database.set('blackjack_game_record', { guildId }, { currentPlayerIndex: nextPlayer.playerIndex, currentPlayerHandIndex: nextPlayer.playerHandIndex });
+      await ctx.database.set('blackjack_game_record', {guildId}, {
+        currentPlayerIndex: nextPlayer.playerIndex,
+        currentPlayerHandIndex: nextPlayer.playerHandIndex
+      });
       return false;
     } else {
       // 如果找不到下一个未投降的玩家，说明游戏还没开始就结束了
       return true;
     }
   }
+
   // Fisher-Yates 洗牌算法
   function shuffleArray<T>(array: T[]): T[] {
     const length = array.length;
@@ -1590,6 +1755,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     }
     return shuffledArray;
   }
+
   // 生成不同大小的牌堆
   function generateDecks(numberOfDecks: number): string[] {
     const decks: string[] = [];
@@ -1600,6 +1766,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 
     return decks;
   }
+
   // 发牌
   async function dealCards(guildId, deck: string[]): Promise<string | undefined> {
     let shuffledNewDeck: string[]
@@ -1609,7 +1776,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       const newDecks = generateDecks(numberOfDecks)
       shuffledNewDeck = shuffleArrayMultipleTimes(newDecks, numTimes);
       const card = shuffledNewDeck.shift(); // 移除并返回牌堆的第一张牌
-      await ctx.database.set('blackjack_game_record', { guildId }, { deck: shuffledNewDeck })
+      await ctx.database.set('blackjack_game_record', {guildId}, {deck: shuffledNewDeck})
       return card;
     }
 
@@ -1618,13 +1785,14 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 
     return card;
   }
+
   // 计算点数
   // 定义一个函数，参数是一个字符串，返回值是一个数字
   function calculateScore(hand: string): number {
     // 定义一个数组，存储所有的花色
     const suits = ['♥️', '♦️', '♣️', '♠️'];
     // 定义一个对象，存储字母对应的点数
-    const values = { 'A': 11, 'J': 10, 'Q': 10, 'K': 10 };
+    const values = {'A': 11, 'J': 10, 'Q': 10, 'K': 10};
     // 定义一个变量，存储总和
     let sum = 0;
     // 定义一个变量，存储 'A' 的个数
@@ -1665,9 +1833,10 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     // 返回总和
     return sum;
   }
+
   function calculateHandScore(hand: string[]): number {
     const suits = ['♥️', '♦️', '♣️', '♠️'];
-    const values = { 'A': 11, 'J': 10, 'Q': 10, 'K': 10 };
+    const values = {'A': 11, 'J': 10, 'Q': 10, 'K': 10};
     let sum = 0;
     let aces = 0;
 
@@ -1694,6 +1863,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 
     return sum;
   }
+
   function isPair(playerHand: string[]): boolean {
     return playerHand.length === 2 && playerHand[0].slice(1) === playerHand[1].slice(1);
   }
@@ -1711,6 +1881,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
   function getCardValue(card: string): string {
     return card.slice(1); // 假设牌的点数位于字符串的第二个位置
   }
+
   function isFlushPair(playerHand: string[]): boolean {
     if (playerHand.length >= 2) {
       const firstCard = playerHand[0];
