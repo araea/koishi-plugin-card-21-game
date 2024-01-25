@@ -26,7 +26,7 @@ npm install koishi-plugin-card-21-game
 - 建议为指令添加指令别名，方便输入和记忆。
 - 本插件依赖于 `monetary` 和 `database` 服务，需要先启动这两个服务。
 - 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏。
-- 如果害怕因组织活动而被冻结，可以开启 `isTextToImageConversionEnabled`（文字转图片）功能。
+- 如果担心因组织活动而被冻结，可以启用 `isTextToImageConversionEnabled`（文字转图片）功能，但更建议使用 `imagify` 插件（在插件市场搜索），视觉效果更佳，渲染速度更快（可能）。
 
 ## ⚙️ 配置项
 
