@@ -26,6 +26,7 @@ npm install koishi-plugin-card-21-game
 - 建议为指令添加指令别名，方便输入和记忆。
 - 本插件依赖于 `monetary` 和 `database` 服务，需要先启动这两个服务。
 - 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏。
+- 如果害怕因组织活动而被冻结，可以开启 `isTextToImageConversionEnabled`（文字转图片）功能。
 
 ## ⚙️ 配置项
 
@@ -33,6 +34,7 @@ npm install koishi-plugin-card-21-game
 
 - `enableCardBetting`：是否开启投注牌型功能，默认为值 false。
 - `enableSurrender`：是否开启投降功能，默认值为 false。
+- `isTextToImageConversionEnabled`：是否开启将文本转为图片的功能（可选），如需启用，需要启用 `markdownToImage` 服务。
 - `dealerSpeed`：庄家要牌的速度，默认值为 2，单位是秒。
 - `betMaxDuration`：投注牌型操作的等待时长，默认值为 30，单位是秒。
 - `buyInsuranceMaxDuration`：买保险操作的等待时长，默认值为 10，单位是秒。
