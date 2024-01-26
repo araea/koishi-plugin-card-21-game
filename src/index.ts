@@ -404,7 +404,7 @@ export function apply(ctx: Context, config: Config) {
 钱已经退给你啦~
 剩余玩家人数：${numberOfPlayers} 名！`);
   });
-  // s*
+  // s* ks*
   // 开始游戏
   ctx.command('blackJack.开始游戏', '开始游戏').action(async ({session}) => {
     const {guildId, userId} = session;
@@ -516,8 +516,11 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
 7. 同花三条：庄家第一张牌与闲家前两张牌同花色和点数，倍数为 50。
 
 投注示例：投注 1 7 50
+
 投注格式：投注 [玩家序号] [类型] [金额]
-其他可选操作：跳过投注
+
+其他可选操作：【跳过投注】
+
 【跳过投注】：闲家发送此操作可直接进入下一阶段。`
 
       // 人数为 1 的时候，新的提示词
@@ -588,6 +591,10 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       // 先为庄家发一张牌，然后给玩家选择是否投降的时间
       await sendMessage(session, `庄家亮牌：【${dealtCardToBanker}】
 点数为：【${calculateScore(dealtCardToBanker)}】
+
+当前阶段为：【投降】
+⌚️ 持续时间为：【${surrenderMaxDuration}】秒！
+
 投降倒计时开始！
 玩家可以在【${surrenderMaxDuration}】秒内选择是否投降！
 【投降】：退回半注。
@@ -639,6 +646,10 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
 
       await sendMessage(session, `庄家亮牌：【${dealtCardToBanker}】
 点数为：【11】点！
+
+当前阶段为：【买保险】
+⌚️ 持续时间为：【${buyInsuranceMaxDuration}】秒！
+
 买保险倒计时开始！
 玩家可以在【${buyInsuranceMaxDuration}】秒内选择是否买保险！
 【买保险】：花费半注，若庄家21点则获得双倍赔偿，否则损失半注。
