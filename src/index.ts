@@ -51,17 +51,17 @@ export interface Config {
 }
 
 export const Config: Schema<Config> = Schema.object({
-  enableCardBetting: Schema.boolean().default(false).description(`是否开启投注牌型功能，默认为值 false。`),
-  enableSurrender: Schema.boolean().default(false).description(`是否开启投降功能，默认为值 false。`),
+  enableCardBetting: Schema.boolean().default(false).description(`是否开启投注牌型功能。`),
+  enableSurrender: Schema.boolean().default(false).description(`是否开启投降功能。`),
   isTextToImageConversionEnabled: Schema.boolean().default(false).description(`是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
   dealerSpeed: Schema.number()
-    .min(0).default(2).description(`庄家要牌的速度，默认值为 2，单位是秒。`),
+    .min(0).default(2).description(`庄家要牌的速度，单位是秒。`),
   betMaxDuration: Schema.number()
-    .min(0).default(30).description(`投注牌型操作的等待时长，默认值为 30，单位是秒。`),
+    .min(0).default(30).description(`投注牌型操作的等待时长，单位是秒。`),
   buyInsuranceMaxDuration: Schema.number()
-    .min(0).default(10).description(`买保险操作的等待时长，默认值为 10，单位是秒。`),
+    .min(0).default(10).description(`买保险操作的等待时长，单位是秒。`),
   surrenderMaxDuration: Schema.number()
-    .min(0).default(10).description(`投降操作的等待时长，默认值为 10，单位是秒。`),
+    .min(0).default(10).description(`投降操作的等待时长，单位是秒。`),
   numberOfDecks: Schema.number()
     .min(1).max(8).default(4).description(`使用几副扑克牌，默认为 4 副（因为闲家都是明牌，所以建议使用默认值）。`),
   transferFeeRate: Schema.number()
