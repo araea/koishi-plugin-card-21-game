@@ -324,7 +324,8 @@ export function apply(ctx: Context, config: Config) {
 赶快去赚些钱吧~
 加入游戏的大门随时为您敞开！`);
         }
-        await sendMessage(session, `🎉 欢迎加入 BlackJack/21 点游戏！
+        await sendMessage(session, `【@${username}】
+🎉 欢迎加入 BlackJack/21 点游戏！
 希望你能玩的开心！
 
 游玩需要投注哦 ~
@@ -334,7 +335,7 @@ export function apply(ctx: Context, config: Config) {
         bet = Number(await session.prompt())
         if (isNaN(bet as number)) {
           // 处理无效输入的逻辑
-          return await sendMessage(session, '【@${username}】\n输入无效，重新来一次吧~')
+          return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`)
         }
       }
       // 检查是否存在有效的投注金额
