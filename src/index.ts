@@ -72,7 +72,14 @@ declare module 'koishi' {
   interface Tables {
     blackjack_game_record: BlackJackGameRecord
     blackjack_playing_record: BlackJackPlayingRecord
+    monetary: Monetary
   }
+}
+
+interface Monetary {
+  uid: number
+  currency: string
+  value: number
 }
 
 export interface BlackJackGameRecord {
