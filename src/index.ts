@@ -337,6 +337,7 @@ export function apply(ctx: Context, config: Config) {
           // 处理无效输入的逻辑
           return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`)
         }
+        // if (!bet)
       }
       // 检查是否存在有效的投注金额
       if (typeof bet !== 'number' || bet <= 0) {
@@ -345,8 +346,16 @@ export function apply(ctx: Context, config: Config) {
 
       // @ts-ignore
       const uid = user.id;
-      const [userMonetary] = await ctx.database.get('monetary', {uid});
-
+      const getUserMonetary = await ctx.database.get('monetary', {uid});
+      if (getUserMonetary.length === 0) {
+        await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
+        return await sendMessage(session, `【@${username}】
+您还没有货币记录呢~
+没办法投注的说...
+不过别担心！
+已经为您办理货币登记了呢~`)
+      }
+      const userMonetary = getUserMonetary[0]
       if (userMonetary.value < bet) {
         return await sendMessage(session, `【@${username}】\n您没钱惹~
 您的余额为：【${userMonetary.value}】`);
