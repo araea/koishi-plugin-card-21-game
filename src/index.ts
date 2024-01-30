@@ -284,7 +284,7 @@ export function apply(ctx: Context, config: Config) {
       let {guildId, userId, username, user} = session;
       if (!guildId) {
         // 在这里为私聊场景赋予一个 guildId
-        guildId = `privateChat-${userId}`;
+        guildId = `privateChat_${userId}`;
       }
 
       // 查询当前群组的游戏记录
@@ -389,7 +389,7 @@ export function apply(ctx: Context, config: Config) {
     let {guildId, userId, user, username} = session;
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     // 检查游戏状态
     const gameInfo = await ctx.database.get('blackjack_game_record', {guildId});
@@ -432,7 +432,7 @@ export function apply(ctx: Context, config: Config) {
     let {guildId, userId} = session;
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     // 检查游戏状态，如果游戏状态不在未开始，则说明已经开始，无需开始
     const gameInfo = await ctx.database.get('blackjack_game_record', {guildId});
@@ -729,7 +729,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     let {guildId, userId, user, username} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     // 检查游戏信息是否存在
     const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
@@ -785,7 +785,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     let {guildId, bot, platform, userId} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     // 如果游戏未开始，把钱退给他们
     // 检查游戏信息是否存在
@@ -829,7 +829,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       let {guildId, userId, user, username} = session
       if (!guildId) {
         // 在这里为私聊场景赋予一个 guildId
-        guildId = `privateChat-${userId}`;
+        guildId = `privateChat_${userId}`;
       }
       // 假如参数都存在，那么需要判断游戏状态是不是在 投注时间
       // 不需要检查是否存在游戏信息
@@ -960,7 +960,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       let {guildId, userId, username, user} = session;
       if (!guildId) {
         // 在这里为私聊场景赋予一个 guildId
-        guildId = `privateChat-${userId}`;
+        guildId = `privateChat_${userId}`;
       }
 
       // 判断该玩家有没有加入过游戏
@@ -994,7 +994,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       let {guildId, userId, username, user} = session;
       if (!guildId) {
         // 在这里为私聊场景赋予一个 guildId
-        guildId = `privateChat-${userId}`;
+        guildId = `privateChat_${userId}`;
       }
 
       // 判断该玩家有没有加入过游戏
@@ -1033,7 +1033,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       let {guildId, userId, username, user} = session;
       if (!guildId) {
         // 在这里为私聊场景赋予一个 guildId
-        guildId = `privateChat-${userId}`;
+        guildId = `privateChat_${userId}`;
       }
       // 判断该玩家有没有加入过游戏
       const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
@@ -1070,7 +1070,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     let {guildId, userId, username} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     // 检查玩家信息，查看该玩家是否加入游戏
     const getPlayer = await ctx.database.get('blackjack_playing_record', {guildId, userId})
@@ -1126,7 +1126,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     let {guildId, userId, username, platform} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
@@ -1225,7 +1225,7 @@ ${score > 21 ? '💥 爆掉了！很遗憾，你输了！下次要小心点哦~'
           await sendMessage(session, `庄家摸牌！
 庄家的手牌为：【${bankerHand.join('')}】，
 庄家当前的点数为：【${bankerScore}】点！
-${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '✌️ 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~' : '\n见好就收咯！'}`);
+${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '✌️ 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~' : (bankerScore < 21) ? '\n见好就收咯！' : ''}`);
 
           if (bankerScore < 17) {
             await bankerPlayGame(guildId, deck);
@@ -1308,7 +1308,7 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
     let {guildId, userId, username, platform} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
@@ -1376,7 +1376,7 @@ ${(score === 11 && playerHand.length === 2) ? `【加倍】：加注一倍，只
         await sendMessage(session, `庄家摸牌！
 庄家的手牌为：【${bankerHand.join('')}】
 庄家当前的点数为【${bankerScore}】点
-${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '🎊 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~！' : '\n见好就收咯！！'}`);
+${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '🎊 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~！' : (bankerScore < 21) ? '\n见好就收咯！' : ''}`);
 
         if (bankerScore < 17) {
           await bankerPlayGame(guildId, deck);
@@ -1438,7 +1438,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     let {guildId, userId, user, username} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
@@ -1521,7 +1521,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     let {guildId, userId, user, username} = session
     if (!guildId) {
       // 在这里为私聊场景赋予一个 guildId
-      guildId = `privateChat-${userId}`;
+      guildId = `privateChat_${userId}`;
     }
     const getGameInfo = await ctx.database.get('blackjack_game_record', {guildId})
     if (getGameInfo.length === 0) {
