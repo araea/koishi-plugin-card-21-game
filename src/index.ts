@@ -1,6 +1,9 @@
 import {Context, h, Keys, Schema, sleep} from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import {} from 'koishi-plugin-markdown-to-image-service'
+import {PlayerRecord} from "koishi-plugin-number-merge-game";
+import {deflateRaw} from "node:zlib";
+import {domainToASCII} from "node:url";
 
 export const inject = {
   required: ['monetary', 'database'],
@@ -26,7 +29,8 @@ export const usage = `
 - \`blackJack.开始游戏\`：开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
 - \`blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]\`：在游戏开始前，对其他玩家的手牌进行牌型投注，需要指定玩家序号、牌型和金额。
 - \`blackJack.跳过投注\`：在游戏开始前，跳过牌型投注的等待时间，直接进入下一阶段。
-- \`blackJack.买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2 倍保险金，若否则损失保险金。
+- \`blackJack.买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2
+  倍保险金，若否则损失保险金。
 - \`blackJack.跳过买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以跳过买保险的等待时间，直接进入下一阶段。
 - \`blackJack.投降\`：在游戏开始后，未要牌前可投降，退回半注（投注筹码与牌型投注的一半）。
 - \`blackJack.跳过投降\`：在游戏开始后，跳过投降的等待时间，直接进入下一阶段。
@@ -35,12 +39,15 @@ export const usage = `
 - \`blackJack.加倍\`：在游戏进行中，如果手牌只有两张，则可以加倍投注，但只能再要一张牌，然后停牌。
 - \`blackJack.分牌\`：在游戏进行中，如果手牌只有两张且点数相同，则可以分成两副手牌，分别进行操作，如果分出的是 A，则只能再要一张牌。
 - \`blackJack.重新开始\`：在游戏结束后，重新开始游戏，清空所有记录，不退还筹码。
+- \`blackJack.排行榜 [number:number]\`：查看排行榜相关指令，可选 \`胜场\`，\`输场\`，\`平局场次\`，\`21点次数\`，\`黑杰克次数\`，\`损益\`。
+- \`blackJack.查询玩家记录 [targetUser:text]\`：查询玩家游戏记录信息，可选参数为目标玩家的 at 信息，没有参数则默认为指令发送者。
 `
 
 export interface Config {
   isTextToImageConversionEnabled: boolean
   enableCardBetting: boolean
   enableSurrender: boolean
+  defaultMaxLeaderboardEntries: number
   dealerSpeed: number
   betMaxDuration: number
   buyInsuranceMaxDuration: number
@@ -53,6 +60,7 @@ export const Config: Schema<Config> = Schema.object({
   enableCardBetting: Schema.boolean().default(false).description(`是否开启投注牌型功能。`),
   enableSurrender: Schema.boolean().default(false).description(`是否开启投降功能。`),
   isTextToImageConversionEnabled: Schema.boolean().default(false).description(`是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
+  defaultMaxLeaderboardEntries: Schema.number().min(0).default(10).description(`显示排行榜时默认的最大人数。`),
   dealerSpeed: Schema.number()
     .min(0).default(2).description(`庄家要牌的速度，单位是秒。`),
   betMaxDuration: Schema.number()
@@ -71,6 +79,7 @@ declare module 'koishi' {
   interface Tables {
     blackjack_game_record: BlackJackGameRecord
     blackjack_playing_record: BlackJackPlayingRecord
+    blackjack_player_record: BlackJackPlayerRecord
     monetary: Monetary
   }
 }
@@ -117,6 +126,18 @@ export interface BlackJackPlayingRecord {
   afterDoublingTheBet: string
 }
 
+export interface BlackJackPlayerRecord {
+  id: number
+  userId: string
+  username: string
+  win: number
+  lose: number
+  moneyChange: number
+  numberOf21: number
+  numberOfBlackJack: number
+  draw: number
+}
+
 const initialDeck = [
   '♥️A', '♥️2', '♥️3', '♥️4', '♥️5', '♥️6', '♥️7', '♥️8', '♥️9', '♥️10', '♥️J', '♥️Q', '♥️K',
   '♦️A', '♦️2', '♦️3', '♦️4', '♦️5', '♦️6', '♦️7', '♦️8', '♦️9', '♦️10', '♦️J', '♦️Q', '♦️K',
@@ -131,6 +152,7 @@ export function apply(ctx: Context, config: Config) {
     buyInsuranceMaxDuration,
     surrenderMaxDuration,
     numberOfDecks,
+    defaultMaxLeaderboardEntries,
     dealerSpeed,
     enableCardBetting,
     enableSurrender,
@@ -174,6 +196,20 @@ export function apply(ctx: Context, config: Config) {
     win: 'double',
     betWin: 'double',
     afterDoublingTheBet: 'string'
+  }, {
+    primary: 'id',
+    autoInc: true,
+  })
+  ctx.model.extend('blackjack_player_record', {
+    id: 'unsigned',
+    userId: 'string',
+    username: 'string',
+    win: 'unsigned',
+    moneyChange: 'double',
+    lose: 'unsigned',
+    numberOf21: 'unsigned',
+    numberOfBlackJack: 'unsigned',
+    draw: 'unsigned',
   }, {
     primary: 'id',
     autoInc: true,
@@ -286,7 +322,22 @@ export function apply(ctx: Context, config: Config) {
         // 在这里为私聊场景赋予一个 guildId
         guildId = `privateChat_${userId}`;
       }
-
+      // 玩家记录表操作
+      const userRecord = await ctx.database.get('blackjack_player_record', {userId});
+      if (userRecord.length === 0) {
+        await ctx.database.create('blackjack_player_record', {
+          userId,
+          username,
+          win: 0,
+          lose: 0,
+          moneyChange: 0,
+          numberOfBlackJack: 0,
+          numberOf21: 0,
+          draw: 0,
+        });
+      } else if (username !== userRecord[0].username) {
+        await ctx.database.set('blackjack_player_record', {userId}, {username});
+      }
       // 查询当前群组的游戏记录
       let gameRecord = await ctx.database.get('blackjack_game_record', {guildId});
 
@@ -370,6 +421,8 @@ export function apply(ctx: Context, config: Config) {
 您的余额为：【${userMonetary.value}】`);
       }
 
+      const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
+      await ctx.database.set('blackjack_player_record', {userId}, {moneyChange: playerRecord.moneyChange - bet});
       await ctx.monetary.cost(uid, bet);
       // 在游玩表中创建玩家
       await ctx.database.create('blackjack_playing_record', {guildId, userId, username, bet, playerHandIndex: 1});
@@ -763,6 +816,11 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     // @ts-ignore
     const uid = user.id
     await ctx.monetary.gain(uid, refundAmount)
+    const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
+    await ctx.database.set('blackjack_player_record', {userId}, {
+      moneyChange: playerRecord.moneyChange + refundAmount,
+      lose: playerRecord.lose + 1,
+    });
     const [userMonetary] = await ctx.database.get('monetary', {uid});
     await ctx.database.set('blackjack_playing_record', {guildId, userId}, {isSurrender: true})
     const theGameResult = await isGameEnded(guildId)
@@ -899,6 +957,10 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         return await sendMessage(session, `你怎么这么穷惹~ 没钱了啦！\n你当前的货币数额为：【${userMonetary.value}】个。`);
       }
 
+      const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
+      await ctx.database.set('blackjack_player_record', {userId}, {
+        moneyChange: playerRecord.moneyChange - betAmount,
+      });
       await ctx.monetary.cost(uid, betAmount);
       // 花了钱，那么，就为该玩家更新游玩信息吧
       await ctx.database.set('blackjack_playing_record', {guildId, userId}, {
@@ -1289,7 +1351,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       )
     }
     // 未爆牌：
-    return await sendMessage(session, `当前玩家是：【${username}】
+    return await sendMessage(session, `当前玩家是：【@${username}】
 您要了一张牌！
 您的手牌为：【${playerHand.join('')}】
 您当前的点数为：【${score}】点
@@ -1422,7 +1484,7 @@ ${(await settleBlackjackGame(platform, guildId))}
 请选择您的操作：
 【要牌】或【停牌】`
     // 下一套牌或下一位玩家
-    return await sendMessage(session, `当前玩家是：【${username}】
+    return await sendMessage(session, `当前玩家是：【@${username}】
 👌 停牌咯！看来你对你的手牌很满意嘛~
 
 您的手牌为：【${playerHand.join('')}】
@@ -1571,6 +1633,10 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       )
     }
     // 扣钱 更新记录
+    const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
+    await ctx.database.set('blackjack_player_record', {userId}, {
+      moneyChange: playerRecord.moneyChange - player.bet,
+    });
     await ctx.monetary.cost(uid, player.bet)
     await ctx.database.set('blackjack_playing_record', {
       guildId,
@@ -1589,6 +1655,139 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 【要牌】：加倍后只能再要一张牌哦~`
     )
   })
+
+  // r* phb*
+  ctx.command('blackJack.排行榜 [number:number]', '查看排行榜相关指令')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      const leaderboards = {
+        "1": `blackJack.排行榜.胜场 ${number}`,
+        "2": `blackJack.排行榜.输场 ${number}`,
+        "3": `blackJack.排行榜.损益 ${number}`,
+        "4": `blackJack.排行榜.平局场次 ${number}`,
+        "5": `blackJack.排行榜.21点次数 ${number}`,
+        "6": `blackJack.排行榜.黑杰克次数 ${number}`,
+        "胜场排行榜": `blackJack.排行榜.胜场 ${number}`,
+        "输场排行榜": `blackJack.排行榜.输场 ${number}`,
+        "损益排行榜": `blackJack.排行榜.损益 ${number}`,
+        "平局场次排行榜": `blackJack.排行榜.平局场次 ${number}`,
+        "21点次数排行榜": `blackJack.排行榜.21点次数 ${number}`,
+        "黑杰克次数排行榜": `blackJack.排行榜.黑杰克次数 ${number}`,
+      };
+
+      await sendMessage(session, `当前可查看排行榜如下：
+1. 胜场排行榜
+2. 输场排行榜
+3. 损益排行榜
+4. 平局场次排行榜
+5. 21点次数排行榜
+6. 黑杰克次数排行榜
+请输入想要查看的【排行榜名】或【序号】：`);
+
+      const userInput = await session.prompt();
+      if (!userInput) return sendMessage(session, `输入超时。`);
+
+      const selectedLeaderboard = leaderboards[userInput];
+      if (selectedLeaderboard) {
+        await session.execute(selectedLeaderboard);
+      } else {
+        return sendMessage(session, `无效的输入。`);
+      }
+    });
+
+  ctx.command('blackJack.排行榜.胜场 [number:number]', '查看玩家胜场排行榜')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      return await getLeaderboard(session, 'win', 'win', '玩家胜场排行榜');
+    });
+
+  ctx.command('blackJack.排行榜.输场 [number:number]', '查看玩家输场排行榜')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      return await getLeaderboard(session, 'lose', 'lose', '玩家输场排行榜');
+    });
+
+  ctx.command('blackJack.排行榜.损益 [number:number]', '查看玩家损益排行榜')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      return await getLeaderboard(session, 'moneyChange', 'moneyChange', '玩家损益排行榜');
+    });
+  ctx.command('blackJack.排行榜.平局场次 [number:number]', '查看玩家平局场次排行榜')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      return await getLeaderboard(session, 'draw', 'draw', '玩家平局场次排行榜');
+    });
+  ctx.command('blackJack.排行榜.21点次数 [number:number]', '查看玩家21点次数排行榜')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      return await getLeaderboard(session, 'numberOf21', 'numberOf21', '玩家21点次数排行榜');
+    });
+  ctx.command('blackJack.排行榜.黑杰克次数 [number:number]', '查看玩家黑杰克次数排行榜')
+    .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
+      if (typeof number !== 'number' || isNaN(number) || number < 0) {
+        return '请输入大于等于 0 的数字作为排行榜的参数。';
+      }
+      return await getLeaderboard(session, 'numberOfBlackJack', 'numberOfBlackJack', '玩家黑杰克次数排行榜');
+    });
+  // cx*
+  ctx.command('blackJack.查询玩家记录 [targetUser:text]', '查询玩家记录')
+    .action(async ({session}, targetUser) => {
+      let {guildId, userId, username} = session
+      if (targetUser) {
+        const userIdRegex = /<at id="([^"]+)"(?: name="([^"]+)")?\/>/;
+        const match = targetUser.match(userIdRegex);
+        userId = match?.[1] ?? userId;
+        username = match?.[2] ?? username;
+      }
+      const targetUserRecord = await ctx.database.get('blackjack_player_record', {userId})
+      if (targetUserRecord.length === 0) {
+        await ctx.database.create('blackjack_player_record', {
+          userId,
+          username,
+          lose: 0,
+          win: 0,
+          moneyChange: 0,
+          numberOfBlackJack: 0,
+          numberOf21: 0,
+          draw: 0
+        })
+        return sendMessage(session, `查询对象：${username}
+无任何游戏记录。`)
+      }
+      const {win, lose, moneyChange, numberOf21, numberOfBlackJack, draw} = targetUserRecord[0]
+      return sendMessage(session, `查询对象：${username}
+胜场次数为：${win} 次
+输场次数为：${lose} 次
+平局次数为：${draw} 次
+获得21点的次数为：${numberOf21} 次
+获得黑杰克的次数为：${numberOfBlackJack} 次
+损益为：${moneyChange} 点
+`)
+    });
+
+  async function getLeaderboard(session: any, type: string, sortField: string, title: string) {
+    const getPlayers: BlackJackPlayerRecord[] = await ctx.database.get('blackjack_player_record', {})
+    const sortedPlayers = getPlayers.sort((a, b) => b[sortField] - a[sortField])
+    const topPlayers = sortedPlayers.slice(0, defaultMaxLeaderboardEntries)
+
+    let result = `${title}：\n`;
+    topPlayers.forEach((player, index) => {
+      result += `${index + 1}. ${player.username}：${player[sortField]} ${(type === 'moneyChange') ? '点' : '次'}\n`
+    })
+    return await sendMessage(session, result);
+  }
 
   async function settleBlackjackGame(platform, guildId) {
 
@@ -1615,14 +1814,33 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
         const {guildId, userId, playerHandIndex, bet} = record;
 
         const updateData = {};
-
+        const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
         if (score > 21) {
           updateData['win'] = 0; // 拿回自己的哥们er 才不给拿回 赌狗不许拿钱
+          await ctx.database.set('blackjack_player_record', {userId}, {
+            lose: playerRecord.lose + 1,
+          });
         } else if (playerHand.length === 2 && score === 21) {
           // 赔 1.5 倍
           updateData['win'] = bet * 1.5 + bet;
+          await ctx.database.set('blackjack_player_record', {userId}, {
+            win: playerRecord.win + 1,
+            numberOfBlackJack: playerRecord.numberOfBlackJack + 1,
+            numberOf21: playerRecord.numberOf21 + 1,
+          });
         } else {
+          if (score === 21) {
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              win: playerRecord.win + 1,
+              numberOf21: playerRecord.numberOf21 + 1,
+            });
+          } else {
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              win: playerRecord.win + 1,
+            });
+          }
           updateData['win'] = bet + bet;
+
         }
 
         await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, updateData);
@@ -1637,14 +1855,21 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           const {playerHand} = record;
           const score = calculateHandScore(playerHand);
           const {guildId, userId, playerHandIndex, bet} = record;
+          const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
           // 除了是黑杰克的平 其他没有黑杰克的全输
 
           const updateData = {};
 
           if (score === 21 && playerHand.length === 2) {
             updateData['win'] = 0 + bet;
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              draw: playerRecord.draw + 1,
+            });
           } else {
             updateData['win'] = -bet * 1.5 + bet;
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              lose: playerRecord.lose + 1,
+            });
           }
 
           await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, updateData);
@@ -1657,24 +1882,49 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           const {playerHand} = record;
           const score = calculateHandScore(playerHand);
           const {guildId, userId, playerHandIndex, bet} = record;
-
+          const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
           const updateData = {};
 
           // 闲家黑杰克
           if (score === 21 && playerHand.length === 2) {
             updateData['win'] = bet * 1.5 + bet;
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              win: playerRecord.win + 1,
+              numberOfBlackJack: playerRecord.numberOfBlackJack + 1,
+              numberOf21: playerRecord.numberOf21 + 1,
+            });
           } else if (score > 21) {
             // 闲家爆牌 本金没有
             updateData['win'] = 0;
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              lose: playerRecord.lose + 1,
+            });
           } else if (bankerScore > score) {
             // 庄家大
             updateData['win'] = 0;
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              lose: playerRecord.lose + 1,
+            });
           } else if (bankerScore < score) {
             // 闲家大
             updateData['win'] = bet + bet;
+            if (score === 21) {
+              await ctx.database.set('blackjack_player_record', {userId}, {
+                win: playerRecord.win + 1,
+                numberOf21: playerRecord.numberOf21 + 1,
+              });
+            } else {
+              await ctx.database.set('blackjack_player_record', {userId}, {
+                win: playerRecord.win + 1,
+              });
+            }
+
           } else if (bankerScore === score) {
             // 平
             updateData['win'] = bet;
+            await ctx.database.set('blackjack_player_record', {userId}, {
+              draw: playerRecord.draw + 1,
+            });
           }
 
           await ctx.database.set('blackjack_playing_record', {guildId, userId, playerHandIndex}, updateData);
@@ -1808,7 +2058,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       }
     }
 
-    function getSettlementInfo(guildId: string): string {
+    async function getSettlementInfo(guildId: string) {
       const players = getThisGuildPlayers.filter(player => player.guildId === guildId);
       const mergedRecords: { [key: string]: number } = {};
 
@@ -1820,22 +2070,24 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
         mergedRecords[key] += player.win + player.insurance + player.betWin;
       });
 
-      // 使用一个 Set 来存储不重复的用户名
-      const settlementInfo = Object.keys(mergedRecords).map(key => {
+      const settlementInfoPromises = Object.keys(mergedRecords).map(async (key) => {
         const [guildId, userId] = key.split('-');
-        // 使用 [...new Set(array)] 来去除数组中的重复元素
         const usernames = [...new Set(players
           .filter(player => player.guildId === guildId && player.userId === userId)
           .map(player => player.username))];
         const settlement = mergedRecords[key];
+        const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
+        await ctx.database.set('blackjack_player_record', {userId}, {moneyChange: playerRecord.moneyChange + settlement});
         return usernames.map(username => `【${username}】: 【${settlement}】`);
       });
+
+      const settlementInfo = await Promise.all(settlementInfoPromises);
 
       return settlementInfo.flat().join('\n');
     }
 
 
-    const settlementInfo = getSettlementInfo(guildId);
+    const settlementInfo = await getSettlementInfo(guildId);
     await ctx.database.remove('blackjack_playing_record', {guildId})
     await ctx.database.remove('blackjack_game_record', {guildId})
     return settlementInfo

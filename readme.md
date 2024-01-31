@@ -25,7 +25,8 @@ npm install koishi-plugin-card-21-game
 - 建议为指令添加指令别名，方便输入和记忆。
 - 本插件依赖于 `monetary` 和 `database` 服务，需要先启动这两个服务。
 - 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏。
-- 如果担心因组织活动而被冻结，可以启用 `isTextToImageConversionEnabled`（文字转图片）功能，但更建议使用 `imagify` 插件（在插件市场搜索），视觉效果更佳，渲染速度更快（可能）。
+- 如果担心因组织活动而被冻结，可以启用 `isTextToImageConversionEnabled`（文字转图片）功能，但更建议使用 `imagify`
+  插件（在插件市场搜索），视觉效果更佳，渲染速度更快（可能）。
 
 ## ⚙️ 配置项
 
@@ -34,6 +35,7 @@ npm install koishi-plugin-card-21-game
 - `enableCardBetting`：是否开启投注牌型功能，默认为值 false。
 - `enableSurrender`：是否开启投降功能，默认值为 false。
 - `isTextToImageConversionEnabled`：是否开启将文本转为图片的功能（可选），如需启用，需要启用 `markdownToImage` 服务。
+- `defaultMaxLeaderboardEntries`：显示排行榜时默认的最大人数，默认为 10。
 - `dealerSpeed`：庄家要牌的速度，默认值为 2，单位是秒。
 - `betMaxDuration`：投注牌型操作的等待时长，默认值为 30，单位是秒。
 - `buyInsuranceMaxDuration`：买保险操作的等待时长，默认值为 10，单位是秒。
@@ -51,7 +53,8 @@ npm install koishi-plugin-card-21-game
 - `blackJack.开始游戏`：开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
 - `blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]`：在游戏开始前，对其他玩家的手牌进行牌型投注，需要指定玩家序号、牌型和金额。
 - `blackJack.跳过投注`：在游戏开始前，跳过牌型投注的等待时间，直接进入下一阶段。
-- `blackJack.买保险`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2 倍保险金，若否则损失保险金。
+- `blackJack.买保险`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2
+  倍保险金，若否则损失保险金。
 - `blackJack.跳过买保险`：在游戏开始后，如果庄家的第一张牌是 A，则可以跳过买保险的等待时间，直接进入下一阶段。
 - `blackJack.投降`：在游戏开始后，未要牌前可投降，退回半注（投注筹码与牌型投注的一半）。
 - `blackJack.跳过投降`：在游戏开始后，跳过投降的等待时间，直接进入下一阶段。
@@ -60,6 +63,8 @@ npm install koishi-plugin-card-21-game
 - `blackJack.加倍`：在游戏进行中，如果手牌只有两张，则可以加倍投注，但只能再要一张牌，然后停牌。
 - `blackJack.分牌`：在游戏进行中，如果手牌只有两张且点数相同，则可以分成两副手牌，分别进行操作，如果分出的是 A，则只能再要一张牌。
 - `blackJack.重新开始`：在游戏结束后，重新开始游戏，清空所有记录，不退还筹码。
+- `blackJack.排行榜 [number:number]`：查看排行榜相关指令，可选 `胜场`，`输场`，`平局场次`，`21点次数`，`黑杰克次数`，`损益`。
+- `blackJack.查询玩家记录 [targetUser:text]`：查询玩家游戏记录信息，可选参数为目标玩家的 at 信息，没有参数则默认为指令发送者。
 
 ## 🙏 致谢
 
