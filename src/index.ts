@@ -1,9 +1,6 @@
 import {Context, h, Keys, Schema, sleep} from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import {} from 'koishi-plugin-markdown-to-image-service'
-import {PlayerRecord} from "koishi-plugin-number-merge-game";
-import {deflateRaw} from "node:zlib";
-import {domainToASCII} from "node:url";
 
 export const inject = {
   required: ['monetary', 'database'],
@@ -15,7 +12,8 @@ export const usage = `
 
 - 建议为指令添加指令别名，方便输入和记忆。
 - 本插件依赖于 \`monetary\` 和 \`database\` 服务，需要先启动这两个服务。
-- 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏。
+- 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏（默认开启零投注功能，0货币也能玩，但无法赚钱）。
+  - 通用货币可以通过 \`签到插件\` 或者 \`其他游戏插件\`（例如钓鱼、赛马等） 获取。
 - 如果担心因组织活动而被冻结，可以启用 \`isTextToImageConversionEnabled\`（文字转图片）功能，但更建议使用 \`imagify\` 插件（在插件市场搜索），视觉效果更佳，渲染速度更快（可能）。
 
 ## 📝 命令
@@ -29,8 +27,7 @@ export const usage = `
 - \`blackJack.开始游戏\`：开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
 - \`blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]\`：在游戏开始前，对其他玩家的手牌进行牌型投注，需要指定玩家序号、牌型和金额。
 - \`blackJack.跳过投注\`：在游戏开始前，跳过牌型投注的等待时间，直接进入下一阶段。
-- \`blackJack.买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2
-  倍保险金，若否则损失保险金。
+- \`blackJack.买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否 21 点，若是则获得 2 倍保险金，若否则损失保险金。
 - \`blackJack.跳过买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以跳过买保险的等待时间，直接进入下一阶段。
 - \`blackJack.投降\`：在游戏开始后，未要牌前可投降，退回半注（投注筹码与牌型投注的一半）。
 - \`blackJack.跳过投降\`：在游戏开始后，跳过投降的等待时间，直接进入下一阶段。
@@ -44,6 +41,7 @@ export const usage = `
 `
 
 export interface Config {
+  allowZeroBetJoin: boolean
   isTextToImageConversionEnabled: boolean
   enableCardBetting: boolean
   enableSurrender: boolean
@@ -52,11 +50,13 @@ export interface Config {
   betMaxDuration: number
   buyInsuranceMaxDuration: number
   surrenderMaxDuration: number
+  joinGameProcedureWaitTimeInSeconds: number
   numberOfDecks: number
   transferFeeRate: number
 }
 
 export const Config: Schema<Config> = Schema.object({
+  allowZeroBetJoin: Schema.boolean().default(true).description(`是否开启零投注也能加入游戏的功能。`),
   enableCardBetting: Schema.boolean().default(false).description(`是否开启投注牌型功能。`),
   enableSurrender: Schema.boolean().default(false).description(`是否开启投降功能。`),
   isTextToImageConversionEnabled: Schema.boolean().default(false).description(`是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
@@ -69,6 +69,8 @@ export const Config: Schema<Config> = Schema.object({
     .min(0).default(10).description(`买保险操作的等待时长，单位是秒。`),
   surrenderMaxDuration: Schema.number()
     .min(0).default(10).description(`投降操作的等待时长，单位是秒。`),
+  joinGameProcedureWaitTimeInSeconds: Schema.number()
+    .min(0).default(2).description(`办理加入游戏手续等待时间，单位是秒。`),
   numberOfDecks: Schema.number()
     .min(1).max(8).default(4).description(`使用几副扑克牌，默认为 4 副（因为闲家都是明牌，所以建议使用默认值）。`),
   transferFeeRate: Schema.number()
@@ -147,6 +149,7 @@ const initialDeck = [
 
 export function apply(ctx: Context, config: Config) {
   const {
+    allowZeroBetJoin,
     isTextToImageConversionEnabled,
     betMaxDuration,
     buyInsuranceMaxDuration,
@@ -156,6 +159,7 @@ export function apply(ctx: Context, config: Config) {
     dealerSpeed,
     enableCardBetting,
     enableSurrender,
+    joinGameProcedureWaitTimeInSeconds,
     transferFeeRate
   } = config
   // 群组id 牌堆 当前进行操作的玩家 游戏状态（开始、未开始、投注时间...） 是否可以投降
@@ -365,17 +369,21 @@ export function apply(ctx: Context, config: Config) {
       if (!bet) {
         // @ts-ignore
         const uid = user.id;
-        const getUserMonetary = await ctx.database.get('monetary', {uid});
+        let getUserMonetary = await ctx.database.get('monetary', {uid});
         if (getUserMonetary.length === 0) {
           await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
-          return await sendMessage(session, `【@${username}】
+          getUserMonetary = await ctx.database.get('monetary', {uid});
+          if (!allowZeroBetJoin) {
+            return await sendMessage(session, `【@${username}】
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
 已经为您办理货币登记了呢~`)
+          }
         }
         const userMonetary = getUserMonetary[0]
-        if (userMonetary.value <= 0) {
+        const isBalanceSufficient = allowZeroBetJoin ? userMonetary.value < 0 : userMonetary.value <= 0
+        if (isBalanceSufficient) {
           return await sendMessage(session, `【@${username}】
 抱歉~
 您没钱啦！
@@ -390,9 +398,11 @@ export function apply(ctx: Context, config: Config) {
 
 游玩需要投注哦 ~
 您的货币余额为：【${userMonetary.value}】
-请输入您的【投注金额】：`)
-
-        bet = Number(await session.prompt())
+${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`)
+        if (allowZeroBetJoin && userMonetary.value === 0) {
+          await sleep(joinGameProcedureWaitTimeInSeconds * 1000)
+        }
+        bet = allowZeroBetJoin && userMonetary.value === 0 ? 0 : Number(await session.prompt())
         if (isNaN(bet as number)) {
           // 处理无效输入的逻辑
           return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`)
@@ -400,25 +410,32 @@ export function apply(ctx: Context, config: Config) {
         // if (!bet)
       }
       // 检查是否存在有效的投注金额
-      if (typeof bet !== 'number' || bet <= 0) {
+      if (typeof bet !== 'number' || (allowZeroBetJoin ? bet < 0 : bet <= 0)) {
         return await sendMessage(session, `【@${username}】\n准备好投注金额，才可以加入游戏哦~`);
       }
 
       // @ts-ignore
       const uid = user.id;
-      const getUserMonetary = await ctx.database.get('monetary', {uid});
+      let getUserMonetary = await ctx.database.get('monetary', {uid});
       if (getUserMonetary.length === 0) {
         await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
-        return await sendMessage(session, `【@${username}】
+        getUserMonetary = await ctx.database.get('monetary', {uid});
+        if (!allowZeroBetJoin) {
+          return await sendMessage(session, `【@${username}】
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
 已经为您办理货币登记了呢~`)
+        }
+
       }
       const userMonetary = getUserMonetary[0]
+      let isBalanceSufficient = true
       if (userMonetary.value < bet) {
-        return await sendMessage(session, `【@${username}】\n您没钱惹~
-您的余额为：【${userMonetary.value}】`);
+        isBalanceSufficient = false
+        bet = userMonetary.value
+//         return await sendMessage(session, `【@${username}】\n您没钱惹~
+// 您的余额为：【${userMonetary.value}】`);
       }
 
       const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
@@ -431,7 +448,7 @@ export function apply(ctx: Context, config: Config) {
       const numberOfPlayers = (await ctx.database.get('blackjack_playing_record', {guildId})).length;
 
       return await sendMessage(session, `【@${username}】
-投注成功！
+${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n' : ''}${bet === 0 && allowZeroBetJoin && userMonetary.value !== 0 ? '检测到允许零投注！\n\n' : ''}投注成功！
 您正式加入游戏了!
 投注筹码数额为：【${bet}】
 剩余通用货币为：【${userMonetary.value - bet}】

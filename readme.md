@@ -24,7 +24,8 @@ npm install koishi-plugin-card-21-game
 
 - 建议为指令添加指令别名，方便输入和记忆。
 - 本插件依赖于 `monetary` 和 `database` 服务，需要先启动这两个服务。
-- 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏。
+- 本插件使用通用货币作为筹码，玩家需要有足够的货币才能参与游戏（默认开启零投注功能，0货币也能玩，但无法赚钱）。
+  - 通用货币可以通过 `签到插件` 或者 `其他游戏插件`（例如钓鱼、赛马等） 获取。
 - 如果担心因组织活动而被冻结，可以启用 `isTextToImageConversionEnabled`（文字转图片）功能，但更建议使用 `imagify`
   插件（在插件市场搜索），视觉效果更佳，渲染速度更快（可能）。
 
@@ -32,7 +33,8 @@ npm install koishi-plugin-card-21-game
 
 本插件提供了以下配置项，可以在启动插件前进行设置：
 
-- `enableCardBetting`：是否开启投注牌型功能，默认为值 false。
+- `allowZeroBetJoin`：是否开启零投注也能加入游戏的功能，默认值为 true。
+- `enableCardBetting`：是否开启投注牌型功能，默认值为 false。
 - `enableSurrender`：是否开启投降功能，默认值为 false。
 - `isTextToImageConversionEnabled`：是否开启将文本转为图片的功能（可选），如需启用，需要启用 `markdownToImage` 服务。
 - `defaultMaxLeaderboardEntries`：显示排行榜时默认的最大人数，默认为 10。
@@ -40,7 +42,9 @@ npm install koishi-plugin-card-21-game
 - `betMaxDuration`：投注牌型操作的等待时长，默认值为 30，单位是秒。
 - `buyInsuranceMaxDuration`：买保险操作的等待时长，默认值为 10，单位是秒。
 - `surrenderMaxDuration`：投降操作的等待时长，默认值为 10，单位是秒。
+- `joinGameProcedureWaitTimeInSeconds`：办理加入游戏手续等待时间，默认值为 2，单位是秒。
 - `numberOfDecks`：使用几副扑克牌，默认为 4 副（因为闲家都是明牌，所以建议使用默认值）。
+- `transferFeeRate`：转账收取的手续费比例，默认值为 0.1。
 
 ## 📝 命令
 
