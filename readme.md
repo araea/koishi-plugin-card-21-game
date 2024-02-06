@@ -33,22 +33,31 @@ npm install koishi-plugin-card-21-game
 
 本插件提供了以下配置项，可以在启动插件前进行设置：
 
+### 一般设置
 - `allowZeroBetJoin`：是否开启零投注也能加入游戏的功能，默认值为 true。
 - `enableCardBetting`：是否开启投注牌型功能，默认值为 false。
 - `enableSurrender`：是否开启投降功能，默认值为 false。
+
+### 图片处理设置
 - `isTextToImageConversionEnabled`：是否开启将文本转为图片的功能（可选），如需启用，需要启用 `markdownToImage` 服务。
+
+### 排行榜设置
 - `defaultMaxLeaderboardEntries`：显示排行榜时默认的最大人数，默认为 10。
+
+### 游戏操作设置
 - `dealerSpeed`：庄家要牌的速度，默认值为 2，单位是秒。
 - `betMaxDuration`：投注牌型操作的等待时长，默认值为 30，单位是秒。
 - `buyInsuranceMaxDuration`：买保险操作的等待时长，默认值为 10，单位是秒。
 - `surrenderMaxDuration`：投降操作的等待时长，默认值为 10，单位是秒。
 - `joinGameProcedureWaitTimeInSeconds`：办理加入游戏手续等待时间，默认值为 2，单位是秒。
+
+### 扑克牌设置
 - `numberOfDecks`：使用几副扑克牌，默认为 4 副（因为闲家都是明牌，所以建议使用默认值）。
+
+### 费用设置
 - `transferFeeRate`：转账收取的手续费比例，默认值为 0.1。
 
 ## 📝 命令
-
-本插件提供了以下命令，可以在群聊中使用：
 
 - `blackJack`：显示本插件的帮助信息。
 - `blackJack.转账 [bet:number]`：给其他玩家转账，例如：blackJack.转账 @小小学 100。
