@@ -789,7 +789,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       const gameCanBuyInsurance = await getGameCanBuyInsurance();
       if (gameCanBuyInsurance === true) {
         await ctx.database.set('blackjack_game_record', {channelId}, {canBuyInsurance: false})
-        await sendMessage(session, `保险已截止，游戏正式开始！`)
+        await sendMessage(session, `买保险已截止，游戏正式开始！`)
       }
       const betPlayerName = betPlayer.username
       return await sendMessage(session, `第一位玩家是：【@${betPlayerName}】
@@ -1655,7 +1655,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     // 判断牌型
     let playerHand = player.playerHand
     if (!(playerHand.length === 2 && calculateHandScore(playerHand) === 11)) {
-      return await sendMessage(session, `两张牌且点数为 11 点才可以分牌哦~`
+      return await sendMessage(session, `两张牌且点数为 11 点才可以加倍哦~`
       )
     }
     // 更新筹码前首先要看当前玩家钱够不够
