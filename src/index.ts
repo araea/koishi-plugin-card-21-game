@@ -768,7 +768,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
 
 买保险倒计时开始！
 玩家可以在【${buyInsuranceMaxDuration}】秒内选择是否买保险！
-【买保险】：花费半注，若庄家21点则获得双倍赔偿，否则损失半注。
+【买保险】：花费半注，若庄家黑杰克则获得双倍赔偿，否则损失半注。
 【跳过买保险】：直接进入下一阶段。`)
 
       // 等待 buyInsuranceDuration 秒给玩家选择的时间
@@ -1580,7 +1580,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     const [userMonetary] = await ctx.database.get('monetary', {uid});
     if (userMonetary.value < player.bet) {
       return await sendMessage(session, `【@${session.username}】
-您的剩余货币为： ${userMonetary.value}
+您的剩余货币为：【${userMonetary.value}】
 想要分牌赢大奖？🎁
 可惜！
 分牌要花费货币：【${player.bet}】
