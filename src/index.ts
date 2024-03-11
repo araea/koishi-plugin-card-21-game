@@ -554,7 +554,6 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
     await ctx.database.set('blackjack_game_record', {channelId}, {gameStatus: '投注时间'})
     // 那么现在，能够确保人数至少够了，接下来打乱玩家顺序，并用序号一一对应，可以用序号索引到对应的userId和 username
     // 但是，如果人数只有一个人，那就不用打乱了对吧
-    // 解决报错： TypeError: Cannot read properties of undefined (reading 'push')
     let shuffledPlayersWithIndex: { index: number; player: any }[] = [];
 
     if (numberOfPlayers !== 1) {
@@ -613,8 +612,11 @@ ${(enableCardBetting) ? prompt : ''}
 ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄家亮牌！` : ''}`)
 
     } else if (numberOfPlayers === 1) {
-      await ctx.database.set('blackjack_playing_record', {userId, channelId}, {playerIndex: 1, playerHandIndex: 1})
       const player = getPlayers[0]
+      await ctx.database.set('blackjack_playing_record', {userId: player.userId, channelId}, {
+        playerIndex: 1,
+        playerHandIndex: 1
+      })
       const prompt = `当前阶段为：【投注牌型】
 
 ⌚️ 投注时间为：【${betMaxDuration}】秒！
