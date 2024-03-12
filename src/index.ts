@@ -1742,7 +1742,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
         return '请输入大于等于 0 的数字作为排行榜的参数。';
       }
-      return await getLeaderboard(session, 'win', 'win', '玩家胜场排行榜');
+      return await getLeaderboard(session, 'win', 'win', '玩家胜场排行榜', number);
     });
 
   ctx.command('blackJack.排行榜.输场 [number:number]', '查看玩家输场排行榜')
@@ -1750,7 +1750,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
         return '请输入大于等于 0 的数字作为排行榜的参数。';
       }
-      return await getLeaderboard(session, 'lose', 'lose', '玩家输场排行榜');
+      return await getLeaderboard(session, 'lose', 'lose', '玩家输场排行榜', number);
     });
 
   ctx.command('blackJack.排行榜.损益 [number:number]', '查看玩家损益排行榜')
@@ -1758,28 +1758,28 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
         return '请输入大于等于 0 的数字作为排行榜的参数。';
       }
-      return await getLeaderboard(session, 'moneyChange', 'moneyChange', '玩家损益排行榜');
+      return await getLeaderboard(session, 'moneyChange', 'moneyChange', '玩家损益排行榜', number);
     });
   ctx.command('blackJack.排行榜.平局场次 [number:number]', '查看玩家平局场次排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
         return '请输入大于等于 0 的数字作为排行榜的参数。';
       }
-      return await getLeaderboard(session, 'draw', 'draw', '玩家平局场次排行榜');
+      return await getLeaderboard(session, 'draw', 'draw', '玩家平局场次排行榜', number);
     });
   ctx.command('blackJack.排行榜.21点次数 [number:number]', '查看玩家21点次数排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
         return '请输入大于等于 0 的数字作为排行榜的参数。';
       }
-      return await getLeaderboard(session, 'numberOf21', 'numberOf21', '玩家21点次数排行榜');
+      return await getLeaderboard(session, 'numberOf21', 'numberOf21', '玩家21点次数排行榜', number);
     });
   ctx.command('blackJack.排行榜.黑杰克次数 [number:number]', '查看玩家黑杰克次数排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
         return '请输入大于等于 0 的数字作为排行榜的参数。';
       }
-      return await getLeaderboard(session, 'numberOfBlackJack', 'numberOfBlackJack', '玩家黑杰克次数排行榜');
+      return await getLeaderboard(session, 'numberOfBlackJack', 'numberOfBlackJack', '玩家黑杰克次数排行榜', number);
     });
   // cx*
   ctx.command('blackJack.查询玩家记录 [targetUser:text]', '查询玩家记录')
@@ -1817,10 +1817,10 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 `)
     });
 
-  async function getLeaderboard(session: any, type: string, sortField: string, title: string) {
+  async function getLeaderboard(session: any, type: string, sortField: string, title: string, maxLeaderboardEntries: number) {
     const getPlayers: BlackJackPlayerRecord[] = await ctx.database.get('blackjack_player_record', {})
     const sortedPlayers = getPlayers.sort((a, b) => b[sortField] - a[sortField])
-    const topPlayers = sortedPlayers.slice(0, defaultMaxLeaderboardEntries)
+    const topPlayers = sortedPlayers.slice(0, maxLeaderboardEntries)
 
     let result = `${title}：\n`;
     topPlayers.forEach((player, index) => {
