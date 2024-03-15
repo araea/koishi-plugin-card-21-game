@@ -51,6 +51,8 @@ export const usage = `
 
 export interface Config {
   allowZeroBetJoin: boolean
+  retractDelay: number
+  imageType: "png" | "jpeg" | "webp"
   isTextToImageConversionEnabled: boolean
   enableCardBetting: boolean
   enableSurrender: boolean
@@ -71,8 +73,10 @@ export const Config: Schema<Config> = Schema.intersect([
     enableSurrender: Schema.boolean().default(false).description(`是否开启投降功能。`),
   }).description('一般设置'),
   Schema.object({
+    retractDelay: Schema.number().min(0).default(0).description(`自动撤回等待的时间，单位是秒。值为 0 时不启用自动撤回功能。`),
+    imageType: Schema.union(['png', 'jpeg', 'webp']).default('png').description(`发送的图片类型。`),
     isTextToImageConversionEnabled: Schema.boolean().default(false).description(`是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
-  }).description('图片处理设置'),
+  }).description('消息处理设置'),
   Schema.object({
     defaultMaxLeaderboardEntries: Schema.number().min(0).default(10).description(`显示排行榜时默认的最大人数。`),
   }).description('排行榜设置'),
@@ -2424,16 +2428,30 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     return suit1 === suit2 && suit2 === suit3 && value1 === value2 && value2 === value3;
   }
 
+  let sentMessages = [];
+
   async function sendMessage(session: any, message: string): Promise<void> {
+    const {bot, channelId} = session;
+    let messageId;
     if (isTextToImageConversionEnabled) {
       const lines = message.split('\n');
       const modifiedMessage = lines
         .map((line) => (line.trim() !== '' ? `# ${line}` : line))
         .join('\n');
       const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
-      await session.send(h.image(imageBuffer, 'image/png'));
+      [messageId] = await session.send(h.image(imageBuffer, `image/${config.imageType}`));
     } else {
-      await session.send(message);
+      [messageId] = await session.send(message);
+    }
+
+    if (config.retractDelay === 0) return;
+    sentMessages.push(messageId);
+
+    if (sentMessages.length > 1) {
+      const oldestMessageId = sentMessages.shift();
+      setTimeout(async () => {
+        await bot.deleteMessage(channelId, oldestMessageId);
+      }, config.retractDelay * 1000);
     }
   }
 
