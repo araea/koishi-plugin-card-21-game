@@ -1850,7 +1850,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
 无任何游戏记录。`, `查询玩家记录 加入游戏`)
       }
       const {win, lose, moneyChange, numberOf21, numberOfBlackJack, draw} = targetUserRecord[0]
-      return sendMessage(session, `【@${sessionUserName}】\n查询对象：${username}
+      return sendMessage(session, `【@${sessionUserName}】\n查询对象：${targetUserRecord[0].username}
 胜场次数为：${win} 次
 输场次数为：${lose} 次
 平局次数为：${draw} 次
