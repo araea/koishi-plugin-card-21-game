@@ -444,7 +444,7 @@ export function apply(ctx: Context, config: Config) {
         await sendMessage(session, `【@${username}】
 您已在游戏中！
 您的投注金额为：【${getPlayer[0].bet}】
-买定离手，无法再更改投注！`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+买定离手，无法再更改投注！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`);
         return
       }
       if (!bet) {
@@ -459,7 +459,7 @@ export function apply(ctx: Context, config: Config) {
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
-已经为您办理货币登记了呢~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+已经为您办理货币登记了呢~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`)
           }
         }
         const userMonetary = getUserMonetary[0]
@@ -471,7 +471,7 @@ export function apply(ctx: Context, config: Config) {
 您当前的货币为：【${userMonetary.value}】
 
 赶快去赚些钱吧~
-加入游戏的大门随时为您敞开！`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+加入游戏的大门随时为您敞开！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`);
         }
         await sendMessage(session, `【@${username}】
 🎉 欢迎加入 BlackJack/21 点游戏！
@@ -479,20 +479,20 @@ export function apply(ctx: Context, config: Config) {
 
 游玩需要投注哦 ~
 您的货币余额为：【${userMonetary.value}】
-${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`);
         if (allowZeroBetJoin && userMonetary.value === 0) {
           await sleep(joinGameProcedureWaitTimeInSeconds * 1000)
         }
         bet = allowZeroBetJoin && userMonetary.value === 0 ? 0 : Number(await session.prompt())
         if (isNaN(bet as number)) {
           // 处理无效输入的逻辑
-          return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+          return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`)
         }
         // if (!bet)
       }
       // 检查是否存在有效的投注金额
       if (typeof bet !== 'number' || (allowZeroBetJoin ? bet < 0 : bet <= 0)) {
-        return await sendMessage(session, `【@${username}】\n准备好投注金额，才可以加入游戏哦~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+        return await sendMessage(session, `【@${username}】\n准备好投注金额，才可以加入游戏哦~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`);
       }
 
       // @ts-ignore
@@ -506,7 +506,7 @@ ${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n�
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
-已经为您办理货币登记了呢~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+已经为您办理货币登记了呢~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`)
         }
 
       }
@@ -531,7 +531,7 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
 您正式加入游戏了！
 投注筹码数额为：【${bet}】
 剩余通用货币为：【${userMonetary.value - bet}】
-当前玩家人数：${numberOfPlayers} 名！`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+当前玩家人数：${numberOfPlayers} 名！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏`);
     });
   // q*
   ctx.command('blackJack.退出游戏', '退出游戏').action(async ({session}) => {
@@ -574,7 +574,7 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
 
     return await sendMessage(session, `【@${username}】\n退出游戏成功！
 钱已经退给你啦~
-剩余玩家人数：${numberOfPlayers} 名！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+剩余玩家人数：${numberOfPlayers} 名！`, `无庄模式 开始游戏 退出游戏 加入游戏`);
   });
   // s* ks*
   // 开始游戏
@@ -875,7 +875,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     // 游戏信息看看游戏状态
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus !== '已开始') {
-      return await sendMessage(session, `【${sessionUserName}】\n还没开始呢笨蛋，这么想投降啊？`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+      return await sendMessage(session, `【${sessionUserName}】\n还没开始呢笨蛋，这么想投降啊？`, `无庄模式 开始游戏 退出游戏 加入游戏`)
     }
     // 判断玩家是否在游戏中
     const getPlayer = await ctx.database.get('blackjack_playing_record', {channelId, userId})
@@ -976,7 +976,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       const getGameInfo = await ctx.database.get('blackjack_game_record', {channelId})
       if (getGameInfo.length === 0) {
         await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-        return await sendMessage(session, `【${sessionUserName}】\n开始游戏之后才能投注呢~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+        return await sendMessage(session, `【${sessionUserName}】\n开始游戏之后才能投注呢~`, `无庄模式 开始游戏 退出游戏 加入游戏`)
       }
       const gameInfo = getGameInfo[0]
       if (gameInfo.gameStatus !== '投注时间') {
@@ -1118,7 +1118,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
         await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-        return await sendMessage(session, `【${sessionUserName}】\n笨蛋~ 还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+        return await sendMessage(session, `【${sessionUserName}】\n笨蛋~ 还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`)
       }
 
       // 检查游戏状态
@@ -1153,7 +1153,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
         await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-        return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+        return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`)
       }
 
       // 检查游戏状态
@@ -1193,7 +1193,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       // 如果当前群组没有游戏信息，则新建一个
       if (gameRecord.length === 0) {
         await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-        return await sendMessage(session, `【${sessionUserName}】\n还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+        return await sendMessage(session, `【${sessionUserName}】\n还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`)
       }
 
       // 检查游戏状态
@@ -1238,13 +1238,13 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     // 是否需要检查这个群组是否存在游戏
     if (getGameInfo.length === 0) {
       await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢~ 买不了保险的说...`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢~ 买不了保险的说...`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     // 检查游戏状态和买保险开关
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus !== '已开始') {
-      return await sendMessage(session, `【${sessionUserName}】\n游戏没开始呀~ 买什么保险呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【${sessionUserName}】\n游戏没开始呀~ 买什么保险呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     if (!gameInfo.canBuyInsurance) {
@@ -1279,12 +1279,12 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     const getGameInfo = await ctx.database.get('blackjack_game_record', {channelId})
     if (getGameInfo.length === 0) {
       await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus !== '已开始') {
-      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始哦~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始哦~`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     // 检查玩家是否在游戏中
@@ -1457,12 +1457,12 @@ ${(score === 11 && playerHand.length === 2 && !gameInfo.isNoDealerMode) ? `【�
     const getGameInfo = await ctx.database.get('blackjack_game_record', {channelId})
     if (getGameInfo.length === 0) {
       await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus !== '已开始') {
-      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始哦~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【${sessionUserName}】\n游戏还没开始哦~`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     // 检查玩家是否在游戏中
@@ -1577,12 +1577,12 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
     const getGameInfo = await ctx.database.get('blackjack_game_record', {channelId})
     if (getGameInfo.length === 0) {
       await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-      return await sendMessage(session, `【@${username}】\n游戏还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【@${username}】\n游戏还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus !== '已开始') {
-      return await sendMessage(session, `【@${username}】\n游戏还没开始哦~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【@${username}】\n游戏还没开始哦~`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     if (gameInfo.isNoDealerMode) {
@@ -1662,12 +1662,12 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
     const getGameInfo = await ctx.database.get('blackjack_game_record', {channelId})
     if (getGameInfo.length === 0) {
       await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-      return await sendMessage(session, `【@${username}】\n游戏还没开始呢！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【@${username}】\n游戏还没开始呢！`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     const gameInfo = getGameInfo[0]
     if (gameInfo.gameStatus !== '已开始') {
-      return await sendMessage(session, `【@${username}】\n游戏还没开始哦~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`
+      return await sendMessage(session, `【@${username}】\n游戏还没开始哦~`, `无庄模式 开始游戏 退出游戏 加入游戏`
       )
     }
     if (gameInfo.isNoDealerMode) {
@@ -1953,30 +1953,31 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
       let dataValue = command;
       switch (command) {
         case '投注牌型':
-          dataValue = '投注';
+          dataValue = 'blackjack.投注';
           break;
-        case '开始游戏（无庄家）':
-          dataValue = '开始游戏 -n';
+        case '无庄模式':
+          dataValue = 'blackjack.开始游戏 -n';
           break;
         case '胜场':
-          dataValue = '排行榜.胜场';
+          dataValue = '胜场排行榜';
           break;
         case '输场':
-          dataValue = '排行榜.输场';
+          dataValue = '输场排行榜';
           break;
         case '损益':
-          dataValue = '排行榜.损益';
+          dataValue = '损益排行榜';
           break;
         case '平局场次':
-          dataValue = '排行榜.平局场次';
+          dataValue = '平局场次排行榜';
           break;
         case '21点次数':
-          dataValue = '排行榜.21点次数';
+          dataValue = '21点次数排行榜';
           break;
         case '黑杰克次数':
-          dataValue = '排行榜.黑杰克次数';
+          dataValue = '黑杰克次数排行榜';
           break;
         default:
+          dataValue = `blackjack.${command}`;
           break;
       }
 
@@ -1989,7 +1990,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
         action: {
           type: 2,
           permission: {type: 2},
-          data: `blackjack.${dataValue}`,
+          data: `${dataValue}`,
           enter: !['转账', '投注牌型', '查询玩家记录', '改名', '加入游戏'].includes(command),
         },
       };
