@@ -403,7 +403,7 @@ export function apply(ctx: Context, config: Config) {
       const gameInfo = gameRecord[0];
 
       if (gameInfo.gameStatus !== '未开始') {
-        return await sendMessage(session, `游戏已经开始了哦~`, `加倍 分牌 停牌 要牌`);
+        return await sendMessage(session, `游戏已经开始了哦~`, `改名 加倍 分牌 停牌 要牌`);
       }
       // 判断该玩家有没有加入过游戏
       const getPlayer = await ctx.database.get('blackjack_playing_record', {channelId, userId})
@@ -411,7 +411,7 @@ export function apply(ctx: Context, config: Config) {
         await sendMessage(session, `【@${username}】
 您已在游戏中！
 您的投注金额为：【${getPlayer[0].bet}】
-买定离手，无法再更改投注！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+买定离手，无法再更改投注！`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
         return
       }
       if (!bet) {
@@ -426,7 +426,7 @@ export function apply(ctx: Context, config: Config) {
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
-已经为您办理货币登记了呢~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+已经为您办理货币登记了呢~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
           }
         }
         const userMonetary = getUserMonetary[0]
@@ -438,7 +438,7 @@ export function apply(ctx: Context, config: Config) {
 您当前的货币为：【${userMonetary.value}】
 
 赶快去赚些钱吧~
-加入游戏的大门随时为您敞开！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+加入游戏的大门随时为您敞开！`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
         }
         await sendMessage(session, `【@${username}】
 🎉 欢迎加入 BlackJack/21 点游戏！
@@ -446,20 +446,20 @@ export function apply(ctx: Context, config: Config) {
 
 游玩需要投注哦 ~
 您的货币余额为：【${userMonetary.value}】
-${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, ``);
+${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
         if (allowZeroBetJoin && userMonetary.value === 0) {
           await sleep(joinGameProcedureWaitTimeInSeconds * 1000)
         }
         bet = allowZeroBetJoin && userMonetary.value === 0 ? 0 : Number(await session.prompt())
         if (isNaN(bet as number)) {
           // 处理无效输入的逻辑
-          return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+          return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
         }
         // if (!bet)
       }
       // 检查是否存在有效的投注金额
       if (typeof bet !== 'number' || (allowZeroBetJoin ? bet < 0 : bet <= 0)) {
-        return await sendMessage(session, `【@${username}】\n准备好投注金额，才可以加入游戏哦~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+        return await sendMessage(session, `【@${username}】\n准备好投注金额，才可以加入游戏哦~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
       }
 
       // @ts-ignore
@@ -473,7 +473,7 @@ ${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n�
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
-已经为您办理货币登记了呢~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
+已经为您办理货币登记了呢~`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`)
         }
 
       }
@@ -498,7 +498,7 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
 您正式加入游戏了!
 投注筹码数额为：【${bet}】
 剩余通用货币为：【${userMonetary.value - bet}】
-当前玩家人数：${numberOfPlayers} 名！`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
+当前玩家人数：${numberOfPlayers} 名！`, `改名 开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
     });
   // q*
   ctx.command('blackJack.退出游戏', '退出游戏').action(async ({session}) => {
@@ -724,7 +724,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         const gameStatus = await getGameStatus(channelId);
         if (gameStatus === '投注时间') {
           await ctx.database.set('blackjack_game_record', {channelId}, {gameStatus: '投注时间结束'})
-          await sendMessage(session, `投注时间已到，下一阶段开始！`, ``)
+          await sendMessage(session, `投注时间已到，下一阶段开始！`, `要牌 停牌`)
         }
       }
 
@@ -764,7 +764,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         const gameCanSurrender = await getGameCanSurrender(channelId);
         if (gameCanSurrender === true) {
           await ctx.database.set('blackjack_game_record', {channelId}, {canSurrender: false})
-          await sendMessage(session, `投降已截止，下一阶段开始！`, ``)
+          await sendMessage(session, `投降已截止，下一阶段开始！`, `要牌 停牌`)
         }
 
         // 判断游戏在投降之后是否已经结束
@@ -800,7 +800,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         const gameCanBuyInsurance = await getGameCanBuyInsurance(channelId);
         if (gameCanBuyInsurance === true) {
           await ctx.database.set('blackjack_game_record', {channelId}, {canBuyInsurance: false})
-          await sendMessage(session, `买保险已截止，游戏正式开始！`, ``)
+          await sendMessage(session, `买保险已截止，游戏正式开始！`, `要牌 停牌`)
         }
         const betPlayerName = betPlayer.username
         return await sendMessage(session, `第一位玩家是：【@${betPlayerName}】
@@ -1068,7 +1068,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     .action(async ({session}) => {
       const sessionUserName = await getSessionUserName(session);
       if (!enableCardBetting) {
-        return await sendMessage(session, `【${sessionUserName}】\n投注牌型功能已关闭。`, ``)
+        return await sendMessage(session, `【${sessionUserName}】\n投注牌型功能已关闭。`, `要牌 停牌`)
       }
       let {channelId, userId, username, user} = session;
       username = sessionUserName
@@ -1094,12 +1094,12 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       const gameInfo = gameRecord[0];
 
       if (gameInfo.gameStatus !== '投注时间') {
-        return await sendMessage(session, `【${sessionUserName}】\n现在不在投注时间哦~`, ``);
+        return await sendMessage(session, `【${sessionUserName}】\n现在不在投注时间哦~`, `要牌 停牌`);
       }
 
       await ctx.database.set('blackjack_game_record', {channelId}, {gameStatus: '投注时间结束'})
 
-      return await sendMessage(session, `玩家【${username}】执行【跳过投注】操作，【投注】通道已关闭！`, ``)
+      return await sendMessage(session, `玩家【${username}】执行【跳过投注】操作，【投注】通道已关闭！`, `要牌 停牌`)
     });
   // tgmbx*
   ctx.command('blackJack.跳过买保险', '跳过买保险的等待时间')
@@ -1488,7 +1488,7 @@ ${(await settleBlackjackGameInNoDealerMode(platform, channelId))}
 您当前的点数为：【${score}】
 
 玩家回合结束！
-庄家正在补牌中...`, ``)
+庄家正在补牌中...`, `要牌 停牌`)
       await sleep(dealerSpeed * 1000)
       let bankerHand: string[] = gameInfo.bankerHand;
 
@@ -1731,7 +1731,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
 4. 平局场次排行榜
 5. 21点次数排行榜
 6. 黑杰克次数排行榜
-请输入想要查看的【排行榜名】或【序号】：`, ``);
+请输入想要查看的【排行榜名】或【序号】：`, `排行榜`);
 
       const userInput = await session.prompt();
       if (!userInput) return sendMessage(session, `输入超时。`, `排行榜`);
@@ -1747,7 +1747,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
   ctx.command('blackJack.排行榜.胜场 [number:number]', '查看玩家胜场排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
-        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, ``);
+        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, `排行榜`);
       }
       return await getLeaderboard(session, 'win', 'win', '玩家胜场排行榜', number);
     });
@@ -1755,7 +1755,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
   ctx.command('blackJack.排行榜.输场 [number:number]', '查看玩家输场排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
-        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, ``);
+        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, `排行榜`);
       }
       return await getLeaderboard(session, 'lose', 'lose', '玩家输场排行榜', number);
     });
@@ -1763,28 +1763,28 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
   ctx.command('blackJack.排行榜.损益 [number:number]', '查看玩家损益排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
-        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, ``);
+        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, `排行榜`);
       }
       return await getLeaderboard(session, 'moneyChange', 'moneyChange', '玩家损益排行榜', number);
     });
   ctx.command('blackJack.排行榜.平局场次 [number:number]', '查看玩家平局场次排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
-        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, ``);
+        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, `排行榜`);
       }
       return await getLeaderboard(session, 'draw', 'draw', '玩家平局场次排行榜', number);
     });
   ctx.command('blackJack.排行榜.21点次数 [number:number]', '查看玩家21点次数排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
-        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, ``);
+        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, `排行榜`);
       }
       return await getLeaderboard(session, 'numberOf21', 'numberOf21', '玩家21点次数排行榜', number);
     });
   ctx.command('blackJack.排行榜.黑杰克次数 [number:number]', '查看玩家黑杰克次数排行榜')
     .action(async ({session}, number = defaultMaxLeaderboardEntries) => {
       if (typeof number !== 'number' || isNaN(number) || number < 0) {
-        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, ``);
+        return await sendMessage(session, `请输入大于等于 0 的数字作为排行榜的参数。`, `排行榜`);
       }
       return await getLeaderboard(session, 'numberOfBlackJack', 'numberOfBlackJack', '玩家黑杰克次数排行榜', number);
     });
@@ -1918,7 +1918,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
         action: {
           type: 2,
           permission: {type: 2},
-          data: `blackjack.${command === '投注牌型' ? '投注' : command}`,
+          data: `blackjack.${command === '投注牌型' ? '投注' : command === '开始游戏（无庄家）' ? '开始游戏 -n' : command}`,
           enter: !(command === '转账' || command === '投注牌型' || command === '查询玩家记录' || command === '改名' || command === '加入游戏'),
         },
       };
@@ -1939,7 +1939,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
     await sendMessage(session, `庄家摸牌！
 庄家的手牌为：【${bankerHand.join('')}】
 庄家当前的点数为【${bankerScore}】点
-${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '🎊 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~！' : (bankerScore < 21) ? '\n见好就收咯！' : ''}`, ``);
+${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2 && bankerScore === 21) ? '🎴 庄家黑杰克！' : ((bankerScore === 21) ? '🎊 庄家21点！' : '')}${(bankerScore < 17) ? '\n嘿嘿，再来一张牌吧~！' : (bankerScore < 21) ? '\n见好就收咯！' : ''}`, `排行榜 改名`);
 
     if (bankerScore < 17) {
       await bankerPlayGame(session, channelId, deck, bankerHand);
