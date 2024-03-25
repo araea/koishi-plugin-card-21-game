@@ -2663,16 +2663,22 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
   }
 
   let sentMessages = [];
+  const msgSeqMap: { [msgId: string]: number } = {};
 
   async function sendMessage(session: any, message: string, markdownCommands: string): Promise<void> {
     const {bot, channelId} = session;
     let messageId;
     message = message.replace(/\n/g, '\r');
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
+      const msgSeq = msgSeqMap[session.messageId] || 1;
+
+      msgSeqMap[session.messageId] = msgSeq + 1;
+
       const buttons = createButtons(markdownCommands);
       const result = await session.qq.sendMessage(session.channelId, {
         msg_type: 2,
         msg_id: session.messageId,
+        msg_seq: msgSeq,
         markdown: {
           custom_template_id: config.customTemplateId,
           params: [
