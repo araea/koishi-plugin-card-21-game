@@ -19,19 +19,23 @@ export const usage = `
 ## 📝 命令
 
 ### 基本操作
+
 - \`blackJack\`：显示本插件的帮助信息。
 - \`blackJack.加入游戏 [bet:number]\`：加入游戏并投注筹码，若不指定投注额，系统将提示输入。
 - \`blackJack.退出游戏\`：退出游戏并返还已投注的筹码，仅限游戏未开始时使用。
 
 ### 游戏流程
+
 - \`blackJack.开始游戏\`：开始游戏，只有游戏中的玩家才能使用，游戏开始后不能再加入或退出。
   - \`-n\` 选项：无庄家模式，玩家之间进行游戏。
 
 ### 投注操作
+
 - \`blackJack.转账 [bet:number]\`：向其他玩家转账，例如：blackJack.转账 @小小学 100。
 - \`blackJack.投注 [playerIndex:number] [betType:string] [betAmount:number]\`：在游戏开始前，对其他玩家的手牌进行牌型投注，需要指定玩家序号、牌型和金额。
 
 ### 游戏阶段控制
+
 - \`blackJack.跳过投注\`：在游戏开始前，跳过牌型投注的等待时间，直接进入下一阶段。
 - \`blackJack.买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以花费一半筹码押注庄家是否达到 21 点，若是则获得双倍保险金，否则损失保险金。
 - \`blackJack.跳过买保险\`：在游戏开始后，如果庄家的第一张牌是 A，则可以跳过购买保险的等待时间，直接进入下一阶段。
@@ -39,12 +43,15 @@ export const usage = `
 - \`blackJack.跳过投降\`：在游戏开始后，跳过投降的等待时间，直接进入下一阶段。
 
 ### 游戏进行中操作
+
 - \`blackJack.要牌\`：在游戏进行中，要一张牌，若点数超过 21 点，则爆牌，输掉本轮游戏。
 - \`blackJack.停牌\`：在游戏进行中，停止要牌，等待庄家和其他玩家的操作。
 - \`blackJack.加倍\`：在游戏进行中，若手牌只有两张，则可以加倍投注，但只能再要一张牌，然后停牌。
 - \`blackJack.分牌\`：在游戏进行中，若手牌只有两张且点数相同，则可以分成两副手牌，分别进行操作，若分出的是 A，则只能再要一张牌。
 
 ### 结束与查询
+
+- \`blackJack.改名\`：QQ 官方机器人使用，用于修改昵称。
 - \`blackJack.重新开始\`：在游戏结束后，重新开始游戏，清空所有记录，不返还筹码。
 - \`blackJack.排行榜 [number:number]\`：查看排行榜相关指令，可选 \`胜场\`，\`输场\`，\`平局场次\`，\`21点次数\`，\`黑杰克次数\`，\`损益\`。
 - \`blackJack.查询玩家记录 [targetUser:text]\`：查询玩家游戏记录信息，可选参数为目标玩家的 at 信息，若没有参数则默认为指令发送者。
@@ -81,7 +88,7 @@ export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     retractDelay: Schema.number().min(0).default(0).description(`自动撤回等待的时间，单位是秒。值为 0 时不启用自动撤回功能。`),
     imageType: Schema.union(['png', 'jpeg', 'webp']).default('png').description(`发送的图片类型。`),
-    isTextToImageConversionEnabled: Schema.boolean().default(false).description(`是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。QQ 官方机器人请不要开启。`),
+    isTextToImageConversionEnabled: Schema.boolean().default(false).description(`（QQ 官方机器人请不要开启）是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
     isEnableQQOfficialRobotMarkdownTemplate: Schema.boolean().default(false).description(`是否启用 QQ 官方机器人的 Markdown 模板，带消息按钮。`),
   }).description('消息处理设置'),
   Schema.union([
@@ -283,8 +290,8 @@ export function apply(ctx: Context, config: Config) {
 请选择您的操作：【@被转账对象】或【取消】
 【被转账对象】：@被转账人。例如，@小小学${(config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') ? `\n\nQQ 官方机器人的话，可以使用对方的 ID 或玩家名字，而不是 @ 哦~` : ''}`, `转账`);
         const userInput = await session.prompt();
-        if (!userInput) return await sendMessage(session, `输入超时。`, `转账`);
-        if (userInput === '取消') return await sendMessage(session, `转账操作已取消。`, `转账`);
+        if (!userInput) return await sendMessage(session, `【@${sessionUserName}】\n输入超时。`, `转账`);
+        if (userInput === '取消') return await sendMessage(session, `【@${sessionUserName}】\n转账操作已取消。`, `转账`);
         content = userInput;
       }
 
@@ -302,7 +309,7 @@ export function apply(ctx: Context, config: Config) {
         if (targetPlayerRecord.length === 0) {
           targetPlayerRecord = await ctx.database.get('blackjack_player_record', {username});
           if (targetPlayerRecord.length === 0) {
-            return await sendMessage(session, '未找到符合要求的用户 ID。', `转账`);
+            return await sendMessage(session, `【@${sessionUserName}】\n未找到符合要求的用户 ID。`, `转账`);
           }
         }
         userId = targetPlayerRecord[0].userId
@@ -313,7 +320,7 @@ export function apply(ctx: Context, config: Config) {
         const match = content && content.match(userIdRegex);
 
         if (!match) {
-          return await sendMessage(session, '未找到符合要求的用户 ID。', `转账`);
+          return await sendMessage(session, `【@${sessionUserName}】\n未找到符合要求的用户 ID。`, `转账`);
         }
 
         const {userId2, username2} = match.groups;
@@ -323,20 +330,19 @@ export function apply(ctx: Context, config: Config) {
         remainingContent = content.replace(match[0], '').trim();
       }
 
-
       let amount: number;
       if (remainingContent.length > 0) {
         amount = parseFloat(remainingContent);
 
         if (Number.isNaN(amount)) {
-          return await sendMessage(session, '转账金额必须是一个有效的数字。', `转账`);
+          return await sendMessage(session, `【@${sessionUserName}】\n转账金额必须是一个有效的数字。`, `转账`);
         }
 
         if (amount < 0) {
-          return await sendMessage(session, '转账金额不能为负数！', `转账`);
+          return await sendMessage(session, `【@${sessionUserName}】\n转账金额不能为负数！`, `转账`);
         }
       } else {
-        return await sendMessage(session, '未找到有效的转账金额。', `转账`);
+        return await sendMessage(session, `【@${sessionUserName}】\n未找到有效的转账金额。`, `转账`);
       }
 
       // @ts-ignore
@@ -430,7 +436,7 @@ export function apply(ctx: Context, config: Config) {
       const gameInfo = gameRecord[0];
 
       if (gameInfo.gameStatus !== '未开始') {
-        return await sendMessage(session, `游戏已经开始了哦~`, `改名 要牌 停牌`);
+        return await sendMessage(session, `【@${username}】\n游戏已经开始了哦~`, `改名 要牌 停牌`);
       }
       // 判断该玩家有没有加入过游戏
       const getPlayer = await ctx.database.get('blackjack_playing_record', {channelId, userId})
@@ -541,7 +547,7 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
     if (gameInfo.length === 0) {
       // 如果当前群组没有游戏信息，新建一个
       await ctx.database.create('blackjack_game_record', {channelId, gameStatus: '未开始'});
-      return await sendMessage(session, '你都没加入呢，怎么退出？', `退出游戏 加入游戏`);
+      return await sendMessage(session, `【@${username}】\n你都没加入呢，怎么退出？`, `退出游戏 加入游戏`);
     }
 
     if (gameInfo[0].gameStatus !== '未开始') {
@@ -552,7 +558,7 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
     const playerInfo = await ctx.database.get('blackjack_playing_record', {channelId, userId});
 
     if (playerInfo.length === 0) {
-      return await sendMessage(session, '加入了才能退出哦~', `退出游戏 加入游戏`);
+      return await sendMessage(session, `【@${username}】\n加入了才能退出哦~`, `退出游戏 加入游戏`);
     }
 
     const player = playerInfo[0]
@@ -1015,7 +1021,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         betType = getCardType(betTypeNumber)
       } else {
         if (!(betType in cardTypes)) {
-          return await sendMessage(session, "【${sessionUserName}】\n傻瓜，给我个有效的牌型！", `投注牌型`);
+          return await sendMessage(session, `【${sessionUserName}】\n傻瓜，给我个有效的牌型！`, `投注牌型`);
         }
       }
       // 检查是否存在有效的投注金额

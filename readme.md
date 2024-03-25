@@ -44,6 +44,10 @@ npm install koishi-plugin-card-21-game
 - `retractDelay`：自动撤回等待的时间，默认值为 0，单位是秒。值为 0 时不启用自动撤回功能。
 - `imageType`：发送的图片类型，默认值为 `png`。
 - `isTextToImageConversionEnabled`：是否开启将文本转为图片的功能（可选），如需启用，需要启用 `markdownToImage` 服务。
+- `isEnableQQOfficialRobotMarkdownTemplate`：是否启用 QQ 官方机器人的 Markdown 模板，带消息按钮。
+  - `customTemplateId`：自定义模板 ID。
+  - `key`：文本内容中特定插值的 key。
+  - `numberOfMessageButtonsPerRow`：每行消息按钮的数量。
 
 ### 排行榜设置
 
@@ -100,6 +104,7 @@ npm install koishi-plugin-card-21-game
 
 ### 结束与查询
 
+- `blackJack.改名`：QQ 官方机器人使用，用于修改昵称。
 - `blackJack.重新开始`：在游戏结束后，重新开始游戏，清空所有记录，不返还筹码。
 - `blackJack.排行榜 [number:number]`：查看排行榜相关指令，可选 `胜场`，`输场`，`平局场次`，`21点次数`，`黑杰克次数`，`损益`。
 - `blackJack.查询玩家记录 [targetUser:text]`：查询玩家游戏记录信息，可选参数为目标玩家的 at 信息，若没有参数则默认为指令发送者。
