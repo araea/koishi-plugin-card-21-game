@@ -2616,7 +2616,7 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
 
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
       const buttons = createButtons(markdownCommands);
-      messageId = await session.qq.sendMessage(session.channelId, {
+      const result = await session.qq.sendMessage(session.channelId, {
         msg_type: 2,
         msg_id: session.messageId,
         markdown: {
@@ -2638,6 +2638,7 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
           },
         },
       });
+      messageId = result.id;
     } else {
       if (isTextToImageConversionEnabled) {
         const lines = message.split('\n');
