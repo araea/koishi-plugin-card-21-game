@@ -1230,7 +1230,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
     const player = getPlayer[0]
     // 只能买一次保险
     if (player.isBuyInsurance) {
-      return await sendMessage(session, `【${sessionUserName}】\n买一次就够了，笨蛋！而且只能买一次好不好！`, `加倍 分牌 要牌 停牌 投降`
+      return await sendMessage(session, `【${sessionUserName}】\n买一次就够了，笨蛋！而且只能买一次好不好！`, `买保险`
       )
     }
     // 检查游戏状态，如果游戏已开始，且买保险开关打开，则可以继续
@@ -1421,17 +1421,18 @@ ${(isHandPair && !gameInfo.isNoDealerMode) ? `【分牌】：分两手玩，每�
 注意：如果分了两张A，每手只能再拿一张牌。` : ''}
 ${(score === 11 && playerHand.length === 2 && !gameInfo.isNoDealerMode) ? `【加倍】：下注翻倍，只能再拿一张牌。` : ''}`
 
-      return await sendMessage(session, `【@${username}】
+      const message = `【@${username}】
 👋 您要了一张牌！
 您的手牌为：【${playerHand.join('')}】
 您当前的点数为：【${score}】
 ${(score > 21) ? '😱 糟糕，你超过了 21，你爆了！' : ((playerHand.length === 2) ? '🎴 黑杰克！' : '✌️ 21点！')}
 
-${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`, `加倍 分牌 要牌 停牌`
+${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
+      return await sendMessage(session, message, `${message.includes('加倍') ? `加倍 ` : ``}${message.includes('分牌') ? `分牌 ` : ``}要牌 停牌`
       )
     }
     // 未爆牌：
-    return await sendMessage(session, `当前玩家是：【@${username}】
+    const message = `当前玩家是：【@${username}】
 您要了一张牌！
 您的手牌为：【${playerHand.join('')}】
 您当前的点数为：【${score}】点
@@ -1440,7 +1441,8 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`,
 【要牌】或【停牌】${(isHandPair && !gameInfo.isNoDealerMode) ? '或【分牌】' : ''}${(score === 11 && playerHand.length === 2 && !gameInfo.isNoDealerMode) ? '或【加倍】' : ''}
 ${(isHandPair && !gameInfo.isNoDealerMode) ? `【分牌】：再下原注，将牌分为两手。
 特殊情况：分开两张A后，每张A只能再要一张牌。` : ''}
-${(score === 11 && playerHand.length === 2 && !gameInfo.isNoDealerMode) ? `【加倍】：加注一倍，只能再拿一张牌。` : ''}`, `加倍 分牌 要牌 停牌`
+${(score === 11 && playerHand.length === 2 && !gameInfo.isNoDealerMode) ? `【加倍】：加注一倍，只能再拿一张牌。` : ''}`
+    return await sendMessage(session, message, `${message.includes('加倍') ? `加倍 ` : ``}${message.includes('分牌') ? `分牌 ` : ``}要牌 停牌`
     )
   })
   // tp*
@@ -1557,13 +1559,14 @@ ${(await settleBlackjackGame(platform, channelId))}
 请选择您的操作：
 【要牌】或【停牌】`
     // 下一套牌或下一位玩家
-    return await sendMessage(session, `当前玩家是：【@${username}】
+    const message = `当前玩家是：【@${username}】
 👌 停牌咯！看来你对你的手牌很满意嘛~
 
 您的手牌为：【${playerHand.join('')}】
 您当前的点数为：【${score}】点
 
-${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`, `加倍 分牌 要牌 停牌`
+${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
+    return await sendMessage(session, message, `${message.includes('加倍') ? `加倍 ` : ``}${message.includes('分牌') ? `分牌 ` : ``}要牌 停牌`
     )
   })
   // fp*
