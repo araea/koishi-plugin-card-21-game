@@ -2623,7 +2623,7 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
           custom_template_id: config.customTemplateId,
           params: [
             {
-              key: "t1",
+              key: config.key,
               values: [`${message}`],
             },
           ],
