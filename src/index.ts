@@ -560,7 +560,7 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
         return await sendMessage(session, `【${sessionUserName}】\n没人怎么玩呀~`, `开始游戏（无庄家） 开始游戏 退出游戏 加入游戏`);
       }
       if (gameInfo[0].gameStatus !== '未开始') {
-        return await sendMessage(session, '【${sessionUserName}】\n已经开始了哦，待会儿记得来呀~', `分牌 加倍 停牌 要牌 投降`);
+        return await sendMessage(session, `【${sessionUserName}】\n已经开始了哦，待会儿记得来呀~`, `分牌 加倍 停牌 要牌 投降`);
       }
       const getPlayers: BlackJackPlayingRecord[] = await ctx.database.get('blackjack_playing_record', {channelId})
       const numberOfPlayers = getPlayers.length
