@@ -2740,7 +2740,7 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
   let sentMessages = [];
   const msgSeqMap: { [msgId: string]: number } = {};
 
-  async function sendMessage(session: any, message: string, markdownCommands: string): Promise<void> {
+  async function sendMessage(session: any, message: any, markdownCommands: string): Promise<void> {
     const {bot, channelId} = session;
     let messageId;
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
