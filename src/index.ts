@@ -2743,8 +2743,8 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
   async function sendMessage(session: any, message: string, markdownCommands: string): Promise<void> {
     const {bot, channelId} = session;
     let messageId;
-    message = message.replace(/\n/g, '\r');
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
+      message = message.replace(/\n/g, '\r');
       const msgSeq = msgSeqMap[session.messageId] || 1;
 
       msgSeqMap[session.messageId] = msgSeq + 1;
