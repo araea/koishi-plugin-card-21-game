@@ -2744,7 +2744,17 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
     const {bot, channelId} = session;
     let messageId;
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
-      message = message.replace(/\n/g, '\r');
+      if (config.isTextToImageConversionEnabled) {
+        const lines = message.split('\n');
+        const modifiedMessage = lines
+          .map((line) => (line.trim() !== '' ? `# ${line}` : line))
+          .join('\n');
+        const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
+        message = h.image(imageBuffer, `image/${config.imageType}`)
+      } else {
+        message = message.replace(/\n/g, '\r');
+      }
+
       const msgSeq = msgSeqMap[session.messageId] || 1;
 
       msgSeqMap[session.messageId] = msgSeq + 1;
