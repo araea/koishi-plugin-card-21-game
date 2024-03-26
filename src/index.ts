@@ -1303,6 +1303,10 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       playerHandIndex: gameInfo.currentPlayerHandIndex
     })
     const player = getPlayerInfo[0]
+    if (player.isOver) {
+      return await sendMessage(session, `【@${sessionUserName}】\n你的回合已经结束了哦~`, ``
+      )
+    }
     // 似乎检查投降并没有什么必要
     if (player.isSurrender) {
       // 下一位：找到下一位没有投降的玩家、如果又都已经投降，那么直接结束游戏，如果没有，就更新游戏信息，为下一位玩家发牌并发送信息
@@ -1378,6 +1382,8 @@ ${score > 21 ? '💥 爆掉了！很遗憾，你输了！下次要小心点哦~'
         await sleep(dealerSpeed * 1000)
         let bankerHand: string[] = gameInfo.bankerHand;
 
+        // 将游戏状态设置为未开始
+        await ctx.database.set('blackjack_game_record', {channelId}, {gameStatus: '未开始'})
         // 调用 bankerPlayGame 函数来为庄家开始游戏
         await bankerPlayGame(session, channelId, deck, bankerHand);
 
@@ -1483,7 +1489,11 @@ ${(score === 11 && playerHand.length === 2 && !gameInfo.isNoDealerMode) ? `【�
       playerHandIndex: gameInfo.currentPlayerHandIndex
     })
     const player = getPlayerInfo[0]
-    // 似乎检查投降并没有什么必要
+    // 该玩家是否已经结束
+    if (player.isOver) {
+      return await sendMessage(session, `【@${sessionUserName}】\n你的回合已经结束了哦~`, ``
+      )
+    }
     if (player.isSurrender) {
       // 下一位：找到下一位没有投降的玩家、如果又都已经投降，那么直接结束游戏，如果没有，就更新游戏信息，为下一位玩家发牌并发送信息
       if (await isGameEnded(channelId)) {
@@ -1525,6 +1535,8 @@ ${(await settleBlackjackGameInNoDealerMode(platform, channelId))}
       await sleep(dealerSpeed * 1000)
       let bankerHand: string[] = gameInfo.bankerHand;
 
+      // 将游戏状态设置为未开始
+      await ctx.database.set('blackjack_game_record', {channelId}, {gameStatus: '未开始'})
       // 调用 bankerPlayGame 函数来为庄家开始游戏
       await bankerPlayGame(session, channelId, deck, bankerHand);
       await sleep(dealerSpeed * 1000)
