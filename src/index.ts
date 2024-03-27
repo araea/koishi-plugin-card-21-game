@@ -296,6 +296,8 @@ export function apply(ctx: Context, config: Config) {
         content = userInput;
       }
 
+      content = await replaceAtTags(session, content)
+
       const {user, platform} = session;
 
       let userId, username;
@@ -1840,10 +1842,12 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       let {channelId, userId, username} = session
       const sessionUserName = await getSessionUserName(session);
 
+
       let targetUserRecord
       if (!targetUser) {
         targetUserRecord = await ctx.database.get('blackjack_player_record', {userId: session.userId})
       } else {
+        targetUser = await replaceAtTags(session, targetUser)
         if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
           targetUserRecord = await ctx.database.get('blackjack_player_record', {username: targetUser})
           if (targetUserRecord.length === 0) {
@@ -1918,6 +1922,29 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     });
 
   // hs*
+  async function replaceAtTags(session, content: string): Promise<string> {
+    // 正则表达式用于匹配 at 标签
+    const atRegex = /<at id="(\d+)"(?: name="([^"]*)")?\/>/g;
+
+    // 匹配所有 at 标签
+    let match;
+    while ((match = atRegex.exec(content)) !== null) {
+      const userId = match[1];
+      const name = match[2];
+
+      // 如果 name 不存在，根据 userId 获取相应的 name
+      if (!name) {
+        const guildMember = await session.bot.getGuildMember(session.guildId, userId);
+
+        // 替换原始的 at 标签
+        const newAtTag = `<at id="${userId}" name="${guildMember.name}"/>`;
+        content = content.replace(match[0], newAtTag);
+      }
+    }
+
+    return content;
+  }
+
   async function getSessionUserName(session: any): Promise<string> {
     let sessionUserName = session.username;
 
@@ -2756,12 +2783,8 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
     const {bot, channelId} = session;
     let messageId;
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
-      message = message.replace(/\n/g, '\r');
-
       const msgSeq = msgSeqMap[session.messageId] || 1;
-
       msgSeqMap[session.messageId] = msgSeq + 1;
-
       const buttons = createButtons(markdownCommands);
 
       const rows = [];
@@ -2773,11 +2796,41 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
           row = {buttons: []};
         }
       });
+      // if (isTextToImageConversionEnabled) {
+      //   const lines = message.split('\n');
+      //   const modifiedMessage = lines
+      //     .map((line) => (line.trim() !== '' ? `# ${line}` : line))
+      //     .join('\n');
+      //   const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
+      //   const hImg = h.image(imageBuffer, `image/${config.imageType}`).attrs.src
+      //   const capture = /^data:([\w/-]+);base64,(.*)$/.exec(hImg)
+      //   const result = await session.qq.sendFileGuild(session.channelId, {
+      //     file_type: 1,
+      //     file_data: capture[2],
+      //     srv_send_msg: false,
+      //   })
+      //   const fileInfo = result.file_info;
+      //   const result2 = await session.qq.sendMessage(session.channelId, {
+      //     msg_type: 7,
+      //     msg_id: session.messageId,
+      //     msg_seq: msgSeq,
+      //     content: ' ',
+      //     media: {file_info: fileInfo},
+      //     keyboard: {
+      //       content: {
+      //         rows: rows.slice(0, 5),
+      //       },
+      //     },
+      //   });
+      //   messageId = result2.id;
+      // } else {
+      message = message.replace(/\n/g, '\r');
 
       const result = await session.qq.sendMessage(session.channelId, {
         msg_type: 2,
         msg_id: session.messageId,
         msg_seq: msgSeq,
+        content: '',
         markdown: {
           custom_template_id: config.customTemplateId,
           params: [
@@ -2794,6 +2847,8 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
         },
       });
       messageId = result.id;
+      // }
+
     } else {
       if (isTextToImageConversionEnabled) {
         const lines = message.split('\n');
