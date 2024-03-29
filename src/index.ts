@@ -274,12 +274,17 @@ export function apply(ctx: Context, config: Config) {
     autoInc: true,
   })
 
-  // blackJack/21点帮助
+  // zl*
+  // blackJack/21点帮助 bz* h*
   ctx.command('blackJack', 'blackJack/21点游戏帮助')
     .action(async ({session}) => {
+      if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
+        return await sendMessage(session, `🎉 欢迎加入 BlackJack/21 点游戏！
+希望你能玩的开心！
+`,`查询玩家记录 改名 转账 加入游戏 排行榜`)
+      }
       await session.execute(`blackjack -h`)
     })
-
   // zz*
   ctx.command('blackJack.转账 [content:text]', '转账')
     .action(async ({session}, content) => {
