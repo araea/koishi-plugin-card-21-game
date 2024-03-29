@@ -291,10 +291,25 @@ export function apply(ctx: Context, config: Config) {
       const sessionUserName = await getSessionUserName(session);
 
       if (!content) {
-        await sendMessage(session, `【@${sessionUserName}】
+        let message = ``
+        if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
+          message = `【@${sessionUserName}】
+欢迎使用转账功能！
+检测到缺少【被转账对象】
+请输入：【被转账对象的ID或其修改后的名字】或【取消】
+输入示例：
+> 圣斗士星矢
+注意：名字不是 QQ 名或 QQ 号，而是其改名后的名字或其专属ID）
+`
+        } else {
+          message = `【@${sessionUserName}】
 检测到缺少【被转账对象】！
 请选择您的操作：【@被转账对象】或【取消】
-【被转账对象】：@被转账人。例如，@小小学${(config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') ? `\n\nQQ 官方机器人的话，可以使用对方的 ID 或玩家名字，而不是 @ 哦~` : ''}`, `转账`);
+【被转账对象】：@被转账人。
+输入示例：
+> @小小学`
+        }
+        await sendMessage(session, message, `转账`);
         const userInput = await session.prompt();
         if (!userInput) return await sendMessage(session, `【@${sessionUserName}】\n输入超时。`, `转账`);
         if (userInput === '取消') return await sendMessage(session, `【@${sessionUserName}】\n转账操作已取消。`, `转账`);
@@ -1846,7 +1861,6 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     .action(async ({session}, targetUser) => {
       let {channelId, userId, username} = session
       const sessionUserName = await getSessionUserName(session);
-
 
       let targetUserRecord
       if (!targetUser) {
