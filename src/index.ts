@@ -96,7 +96,7 @@ export const Config: Schema<Config> = Schema.intersect([
     Schema.object({
       isEnableQQOfficialRobotMarkdownTemplate: Schema.const(true).required(),
       customTemplateId: Schema.string().default('').description(`自定义模板 ID。`),
-      key: Schema.string().default('').description(`文本内容中特定插值的 key。`),
+      key: Schema.string().default('').description(`文本内容中特定插值的 key。如果你的插值为 {{.info}}，那么请在这里填 info。`),
       numberOfMessageButtonsPerRow: Schema.number().min(1).max(5).default(2).description(`每行消息按钮的数量。`),
     }),
     Schema.object({}),
