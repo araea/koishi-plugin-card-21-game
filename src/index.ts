@@ -346,7 +346,6 @@ export function apply(ctx: Context, config: Config) {
         if (!match) {
           return await sendMessage(session, `【@${sessionUserName}】\n未找到符合要求的用户 ID。`, `转账`);
         }
-
         userId = match.groups.userId
         username = match.groups.username
 
@@ -399,9 +398,13 @@ export function apply(ctx: Context, config: Config) {
       }
       const newScore = userMoney - amount - transferFee;
 
+      const targetUser = await ctx.database.getUser(platform, userId);
+      if (!targetUser) {
+        return await sendMessage(session, `【@${sessionUserName}】\n转账失败！\n哎呀，我根本不认识他的说...`, `转账`)
+      }
+
       await ctx.database.set('monetary', {uid}, {value: newScore});
 
-      const targetUser = await ctx.database.getUser(platform, userId);
       const uid2 = targetUser.id;
       const getUserMonetary2 = await ctx.database.get('monetary', {uid: uid2});
 
