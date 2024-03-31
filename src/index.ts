@@ -89,7 +89,7 @@ export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     retractDelay: Schema.number().min(0).default(0).description(`（暂不支持 QQ 官方机器人）自动撤回等待的时间，单位是秒。值为 0 时不启用自动撤回功能。`),
     imageType: Schema.union(['png', 'jpeg', 'webp']).default('png').description(`发送的图片类型。`),
-    isTextToImageConversionEnabled: Schema.boolean().default(false).description(`（QQ 官方机器人请不要开启）是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
+    isTextToImageConversionEnabled: Schema.boolean().default(false).description(`（暂不支持 QQ 官方机器人）是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
     isEnableQQOfficialRobotMarkdownTemplate: Schema.boolean().default(false).description(`是否启用 QQ 官方机器人的 Markdown 模板，带消息按钮。`),
   }).description('消息处理设置'),
   Schema.union([
@@ -2890,7 +2890,11 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
     if (sentMessages.length > 1) {
       const oldestMessageId = sentMessages.shift();
       setTimeout(async () => {
-        await bot.deleteMessage(channelId, oldestMessageId);
+        if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
+          // db*
+        } else {
+          await bot.deleteMessage(channelId, oldestMessageId);
+        }
       }, config.retractDelay * 1000);
     }
   }
