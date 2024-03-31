@@ -281,7 +281,7 @@ export function apply(ctx: Context, config: Config) {
       if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
         return await sendMessage(session, `🎉 欢迎加入 BlackJack/21 点游戏！
 希望你能玩的开心！
-`,`查询玩家记录 改名 转账 加入游戏 排行榜`)
+`, `查询玩家记录 改名 转账 加入游戏 排行榜`)
       }
       await session.execute(`blackjack -h`)
     })
@@ -320,7 +320,8 @@ export function apply(ctx: Context, config: Config) {
 
       const {user, platform} = session;
 
-      let userId, username;
+      let userId = '';
+      let username = '';
       let remainingContent;
       if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
         // 分割 content
@@ -346,9 +347,8 @@ export function apply(ctx: Context, config: Config) {
           return await sendMessage(session, `【@${sessionUserName}】\n未找到符合要求的用户 ID。`, `转账`);
         }
 
-        const {userId2, username2} = match.groups;
-        userId = userId2
-        username = username2
+        userId = match.groups.userId
+        username = match.groups.username
 
         remainingContent = content.replace(match[0], '').trim();
       }
