@@ -423,7 +423,7 @@ export function apply(ctx: Context, config: Config) {
 您的余额为：【${newScore}】`, `查询玩家记录 转账 加入游戏`);
     });
 
-  // j*
+  // j* jr*
   // 加入游戏并投注筹码
   ctx.command('blackJack.加入游戏 [bet:number]', '加入游戏并投注筹码')
     .action(async ({session}, bet) => {
@@ -505,7 +505,7 @@ export function apply(ctx: Context, config: Config) {
 
 游玩需要投注哦 ~
 您的货币余额为：【${userMonetary.value}】
-${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, ``);
+${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, `${allowZeroBetJoin && userMonetary.value === 0 ? '' : `输入投注金额`}`);
         if (allowZeroBetJoin && userMonetary.value === 0) {
           await sleep(joinGameProcedureWaitTimeInSeconds * 1000)
         }
@@ -2041,6 +2041,9 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
         case '黑杰克次数':
           dataValue = '黑杰克次数排行榜';
           break;
+        case '输入投注金额':
+          dataValue = '';
+          break;
         default:
           dataValue = `blackjack.${command}`;
           break;
@@ -2056,7 +2059,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           type: 2,
           permission: {type: 2},
           data: `${dataValue}`,
-          enter: !['转账', '投注牌型', '查询玩家记录', '改名', '加入游戏'].includes(command),
+          enter: !['转账', '投注牌型', '查询玩家记录', '改名', '加入游戏', '输入投注金额'].includes(command),
         },
       };
     });
