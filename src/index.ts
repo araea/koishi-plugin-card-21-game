@@ -77,6 +77,8 @@ export interface Config {
   customTemplateId: string
   key: string
   numberOfMessageButtonsPerRow: number
+  // key2: string
+  // key3: string
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -89,14 +91,16 @@ export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     retractDelay: Schema.number().min(0).default(0).description(`自动撤回等待的时间，单位是秒。值为 0 时不启用自动撤回功能。`),
     imageType: Schema.union(['png', 'jpeg', 'webp']).default('png').description(`发送的图片类型。`),
-    isTextToImageConversionEnabled: Schema.boolean().default(false).description(`（暂不支持 QQ 官方机器人）是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
-    isEnableQQOfficialRobotMarkdownTemplate: Schema.boolean().default(false).description(`是否启用 QQ 官方机器人的 Markdown 模板，带消息按钮。`),
+    isTextToImageConversionEnabled: Schema.boolean().default(false).description(`（QQ 官方机器人必须开启，防违规检测）是否开启将文本转为图片的功能（可选），如需启用，需要启用 \`markdownToImage\` 服务。`),
+    isEnableQQOfficialRobotMarkdownTemplate: Schema.boolean().default(false).description(`（QQ 官方机器人必须开启文本转图片功能，用于防违规检测）是否启用 QQ 官方机器人的 Markdown 模板，带消息按钮。`),
   }).description('消息处理设置'),
   Schema.union([
     Schema.object({
       isEnableQQOfficialRobotMarkdownTemplate: Schema.const(true).required(),
       customTemplateId: Schema.string().default('').description(`自定义模板 ID。`),
       key: Schema.string().default('').description(`文本内容中特定插值的 key。如果你的插值为 {{.info}}，那么请在这里填 info。`),
+      // key2: Schema.string().default('').description(`发送图片信息的特定插值的 key，用于存放图片的宽高。与下面的 key3 联动，Markdown 源码中形如：{{.key2}}{{.key3}}，那么该配置项就填 key2，下面的就填 key3。`),
+      // key3: Schema.string().default('').description(`发送图片URL的特定插值的 key，用于存放图片的URL。`),
       numberOfMessageButtonsPerRow: Schema.number().min(1).max(5).default(2).description(`每行消息按钮的数量。`),
     }),
     Schema.object({}),
@@ -2804,12 +2808,13 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
   let sentMessages = [];
   const msgSeqMap: { [msgId: string]: number } = {};
 
-  async function sendMessage(session: any, message: any, markdownCommands: string): Promise<void> {
+  async function sendMessage(session: any, message: any, markdownCommands: string, isButton?: boolean): Promise<void> {
     const {bot, channelId} = session;
     let messageId;
+    let isPushMessageId = false;
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
       const msgSeq = msgSeqMap[session.messageId] || 1;
-      msgSeqMap[session.messageId] = msgSeq + 1;
+      msgSeqMap[session.messageId] = msgSeq + 10;
       const buttons = createButtons(markdownCommands);
 
       const rows = [];
@@ -2821,58 +2826,105 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
           row = {buttons: []};
         }
       });
-      // if (isTextToImageConversionEnabled) {
-      //   const lines = message.split('\n');
-      //   const modifiedMessage = lines
-      //     .map((line) => (line.trim() !== '' ? `# ${line}` : line))
-      //     .join('\n');
-      //   const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
-      //   const hImg = h.image(imageBuffer, `image/${config.imageType}`).attrs.src
-      //   const capture = /^data:([\w/-]+);base64,(.*)$/.exec(hImg)
-      //   const result = await session.qq.sendFileGuild(session.channelId, {
-      //     file_type: 1,
-      //     file_data: capture[2],
-      //     srv_send_msg: false,
-      //   })
-      //   const fileInfo = result.file_info;
-      //   const result2 = await session.qq.sendMessage(session.channelId, {
-      //     msg_type: 7,
-      //     msg_id: session.messageId,
-      //     msg_seq: msgSeq,
-      //     content: ' ',
-      //     media: {file_info: fileInfo},
-      //     keyboard: {
-      //       content: {
-      //         rows: rows.slice(0, 5),
-      //       },
-      //     },
-      //   });
-      //   messageId = result2.id;
-      // } else {
-      message = message.replace(/\n/g, '\r');
 
-      const result = await session.qq.sendMessage(session.channelId, {
-        msg_type: 2,
-        msg_id: session.messageId,
-        msg_seq: msgSeq,
-        content: '',
-        markdown: {
-          custom_template_id: config.customTemplateId,
-          params: [
-            {
-              key: config.key,
-              values: [`${message}`],
+      if (isTextToImageConversionEnabled) {
+        if (isButton) {
+          const result = await session.qq.sendMessage(session.channelId, {
+            msg_type: 2,
+            msg_id: session.messageId,
+            msg_seq: msgSeq,
+            content: '',
+            markdown: {
+              custom_template_id: config.customTemplateId,
+              params: [
+                {
+                  key: config.key,
+                  values: [`<@${session.userId}>`],
+                },
+              ],
             },
-          ],
-        },
-        keyboard: {
-          content: {
-            rows: rows.slice(0, 5),
+            keyboard: {
+              content: {
+                rows: rows.slice(0, 5),
+              },
+            },
+          });
+          messageId = result.id;
+        } else {
+          const lines = message.split('\n');
+          const modifiedMessage = lines
+            .map((line) => (line.trim() !== '' ? `# ${line}` : line))
+            .join('\n');
+          const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
+          [messageId] = await session.send(h.image(imageBuffer, `image/${config.imageType}`));
+          if (config.retractDelay !== 0) {
+            isPushMessageId = true;
+            sentMessages.push(messageId);
+          }
+          if (markdownCommands !== '') {
+            await sendMessage(session, '', markdownCommands, true)
+          }
+        }
+
+        // const hImg = h.image(imageBuffer, `image/${config.imageType}`).attrs.src
+        // const capture = /^data:([\w/-]+);base64,(.*)$/.exec(hImg)
+        // const result = await session.qq.sendFileGuild(session.channelId, {
+        //   file_type: 1,
+        //   file_data: capture[2],
+        //   srv_send_msg: false,
+        // })
+        // const url = `http://multimedia.nt.qq.com/download?appid=1407&fileid=${result.file_uuid.replace(/_/g, "%5F")}&rkey=CAMSKMa3OFokB%5fTlXbdWx0sNAtdt7YQNj36jIjbfuwwsli1U3XZknVopAnQ`
+        // // const fileInfo = result.file_info;
+        // const result2 = await session.qq.sendMessage(session.channelId, {
+        //   msg_type: 2,
+        //   msg_id: session.messageId,
+        //   msg_seq: msgSeq,
+        //   content: '111',
+        //   markdown: {
+        //     custom_template_id: config.customTemplateId,
+        //     params: [
+        //       {
+        //         key: config.key2,
+        //         values: [`![img #800px #0px]`],
+        //       },
+        //       {
+        //         key: config.key3,
+        //         values: [`(${url})`],
+        //       }
+        //     ],
+        //   },
+        //   keyboard: {
+        //     content: {
+        //       rows: rows.slice(0, 5),
+        //     },
+        //   },
+        // });
+        // messageId = result2.id;
+      } else {
+        message = message.replace(/\n/g, '\r');
+
+        const result = await session.qq.sendMessage(session.channelId, {
+          msg_type: 2,
+          msg_id: session.messageId,
+          msg_seq: msgSeq,
+          content: '',
+          markdown: {
+            custom_template_id: config.customTemplateId,
+            params: [
+              {
+                key: config.key,
+                values: [`${message}`],
+              },
+            ],
           },
-        },
-      });
-      messageId = result.id;
-      // }
+          keyboard: {
+            content: {
+              rows: rows.slice(0, 5),
+            },
+          },
+        });
+        messageId = result.id;
+      }
 
     } else {
       if (isTextToImageConversionEnabled) {
@@ -2888,7 +2940,9 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
     }
 
     if (config.retractDelay === 0) return;
-    sentMessages.push(messageId);
+    if (!isPushMessageId) {
+      sentMessages.push(messageId);
+    }
 
     if (sentMessages.length > 1) {
       const oldestMessageId = sentMessages.shift();
