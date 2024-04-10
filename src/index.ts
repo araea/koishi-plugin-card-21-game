@@ -282,9 +282,9 @@ export function apply(ctx: Context, config: Config) {
   // blackJack/21点帮助 bz* h*
   ctx.command('blackJack', 'blackJack/21点游戏帮助')
     .action(async ({session}) => {
-      if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
-        return await sendMessage(session, `🎉 欢迎加入 BlackJack/21 点游戏！
-希望你能玩的开心！
+      if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '' || session.platform === 'qq') {
+        return await sendMessage(session, `🎉 欢迎来到 BlackJack/21 点游戏！
+😆 希望你能玩的开心！
 `, `查询玩家记录 改名 转账 加入游戏 排行榜`)
       }
       await session.execute(`blackjack -h`)
@@ -2809,12 +2809,13 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
   const msgSeqMap: { [msgId: string]: number } = {};
 
   async function sendMessage(session: any, message: any, markdownCommands: string, isButton?: boolean): Promise<void> {
+    isButton = isButton || false;
     const {bot, channelId} = session;
     let messageId;
     let isPushMessageId = false;
     if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
-      const msgSeq = msgSeqMap[session.messageId] || 1;
-      msgSeqMap[session.messageId] = msgSeq + 10;
+      const msgSeq = msgSeqMap[session.messageId] || 10;
+      msgSeqMap[session.messageId] = msgSeq + 100;
       const buttons = createButtons(markdownCommands);
 
       const rows = [];
@@ -2827,82 +2828,33 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
         }
       });
 
-      if (isTextToImageConversionEnabled) {
-        if (isButton) {
-          const result = await session.qq.sendMessage(session.channelId, {
-            msg_type: 2,
-            msg_id: session.messageId,
-            msg_seq: msgSeq,
-            content: '',
-            markdown: {
-              custom_template_id: config.customTemplateId,
-              params: [
-                {
-                  key: config.key,
-                  values: [`<@${session.userId}>`],
-                },
-              ],
-            },
-            keyboard: {
-              content: {
-                rows: rows.slice(0, 5),
-              },
-            },
-          });
-          messageId = result.id;
+      if (!isButton && config.isTextToImageConversionEnabled) {
+        const lines = message.toString().split('\n');
+        const isOnlyImgTag = lines.length === 1 && lines[0].trim().startsWith('<img');
+        if (isOnlyImgTag) {
+          [messageId] = await session.send(message);
         } else {
-          const lines = message.split('\n');
           const modifiedMessage = lines
-            .map((line) => (line.trim() !== '' ? `# ${line}` : line))
+            .map((line) => {
+              if (line.trim() !== '' && !line.includes('<img')) {
+                return `# ${line}`;
+              } else {
+                return line + '\n';
+              }
+            })
             .join('\n');
           const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
           [messageId] = await session.send(h.image(imageBuffer, `image/${config.imageType}`));
-          if (config.retractDelay !== 0) {
-            isPushMessageId = true;
-            sentMessages.push(messageId);
-          }
-          if (markdownCommands !== '') {
-            await sendMessage(session, '', markdownCommands, true)
-          }
+        }
+        if (config.retractDelay !== 0) {
+          isPushMessageId = true;
+          sentMessages.push(messageId);
         }
 
-        // const hImg = h.image(imageBuffer, `image/${config.imageType}`).attrs.src
-        // const capture = /^data:([\w/-]+);base64,(.*)$/.exec(hImg)
-        // const result = await session.qq.sendFileGuild(session.channelId, {
-        //   file_type: 1,
-        //   file_data: capture[2],
-        //   srv_send_msg: false,
-        // })
-        // const url = `http://multimedia.nt.qq.com/download?appid=1407&fileid=${result.file_uuid.replace(/_/g, "%5F")}&rkey=CAMSKMa3OFokB%5fTlXbdWx0sNAtdt7YQNj36jIjbfuwwsli1U3XZknVopAnQ`
-        // // const fileInfo = result.file_info;
-        // const result2 = await session.qq.sendMessage(session.channelId, {
-        //   msg_type: 2,
-        //   msg_id: session.messageId,
-        //   msg_seq: msgSeq,
-        //   content: '111',
-        //   markdown: {
-        //     custom_template_id: config.customTemplateId,
-        //     params: [
-        //       {
-        //         key: config.key2,
-        //         values: [`![img #800px #0px]`],
-        //       },
-        //       {
-        //         key: config.key3,
-        //         values: [`(${url})`],
-        //       }
-        //     ],
-        //   },
-        //   keyboard: {
-        //     content: {
-        //       rows: rows.slice(0, 5),
-        //     },
-        //   },
-        // });
-        // messageId = result2.id;
-      } else {
-        message = message.replace(/\n/g, '\r');
-
+        if (config.isTextToImageConversionEnabled && markdownCommands !== '') {
+          await sendMessage(session, '', markdownCommands, true)
+        }
+      } else if (isButton && config.isTextToImageConversionEnabled) {
         const result = await session.qq.sendMessage(session.channelId, {
           msg_type: 2,
           msg_id: session.messageId,
@@ -2913,7 +2865,7 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
             params: [
               {
                 key: config.key,
-                values: [`${message}`],
+                values: [`<@${session.userId}>`],
               },
             ],
           },
@@ -2924,16 +2876,58 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
           },
         });
         messageId = result.id;
+      } else {
+        if (message.attrs?.src || message.includes('<img')) {
+          [messageId] = await session.send(message);
+        } else {
+          // message = message.replace(/\n/g, '\r').replace(/\*/g, "？");
+          // message = replaceSymbols(message);
+          message = message.replace(/\n/g, '\r');
+
+          const result = await session.qq.sendMessage(session.channelId, {
+            msg_type: 2,
+            msg_id: session.messageId,
+            msg_seq: msgSeq,
+            content: '111',
+            markdown: {
+              custom_template_id: config.customTemplateId,
+              params: [
+                {
+                  key: config.key,
+                  values: [`${message}`],
+                },
+              ],
+            },
+            keyboard: {
+              content: {
+                rows: rows.slice(0, 5),
+              },
+            },
+          });
+
+          messageId = result.id;
+        }
       }
 
     } else {
-      if (isTextToImageConversionEnabled) {
+      if (config.isTextToImageConversionEnabled) {
         const lines = message.split('\n');
-        const modifiedMessage = lines
-          .map((line) => (line.trim() !== '' ? `# ${line}` : line))
-          .join('\n');
-        const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
-        [messageId] = await session.send(h.image(imageBuffer, `image/${config.imageType}`));
+        const isOnlyImgTag = lines.length === 1 && lines[0].trim().startsWith('<img');
+        if (isOnlyImgTag) {
+          [messageId] = await session.send(message);
+        } else {
+          const modifiedMessage = lines
+            .map((line) => {
+              if (line.trim() !== '' && !line.includes('<img')) {
+                return `# ${line}`;
+              } else {
+                return line + '\n';
+              }
+            })
+            .join('\n');
+          const imageBuffer = await ctx.markdownToImage.convertToImage(modifiedMessage);
+          [messageId] = await session.send(h.image(imageBuffer, `image/${config.imageType}`));
+        }
       } else {
         [messageId] = await session.send(message);
       }
