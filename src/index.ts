@@ -332,7 +332,7 @@ export function apply(ctx: Context, config: Config) {
         const contentArray = content.split(' ');
         userId = contentArray[0]
         username = contentArray[0]
-        let targetPlayerRecord
+        let targetPlayerRecord: BlackJackPlayerRecord[] = []
         targetPlayerRecord = await ctx.database.get('blackjack_player_record', {userId});
         if (targetPlayerRecord.length === 0) {
           targetPlayerRecord = await ctx.database.get('blackjack_player_record', {username});
@@ -348,12 +348,23 @@ export function apply(ctx: Context, config: Config) {
         const match = content && content.match(userIdRegex);
 
         if (!match) {
-          return await sendMessage(session, `【@${sessionUserName}】\n未找到符合要求的用户 ID。`, `转账`);
-        }
-        userId = match.groups.userId
-        username = match.groups.username
+          const contentArray = content.split(' ');
+          userId = contentArray[0]
+          const targetPlayerRecord: BlackJackPlayerRecord[] = await ctx.database.get('blackjack_player_record', {userId});
+          if (targetPlayerRecord.length === 0) {
+            return await sendMessage(session, `【@${sessionUserName}】\n未找到符合要求的用户 ID。`, `转账`);
+          } else {
+            userId = targetPlayerRecord[0].userId
+            username = targetPlayerRecord[0].username
+            remainingContent = contentArray[1]
+          }
 
-        remainingContent = content.replace(match[0], '').trim();
+        } else {
+          userId = match.groups.userId
+          username = match.groups.username
+          remainingContent = content.replace(match[0], '').trim();
+        }
+
       }
 
       let amount: number;
@@ -1867,11 +1878,12 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
   ctx.command('blackJack.查询玩家记录 [targetUser:text]', '查询玩家记录')
     .action(async ({session}, targetUser) => {
       let {channelId, userId, username} = session
+      const originalUserId = userId
       const sessionUserName = await getSessionUserName(session);
 
-      let targetUserRecord
+      let targetUserRecord: BlackJackPlayerRecord[] = []
       if (!targetUser) {
-        targetUserRecord = await ctx.database.get('blackjack_player_record', {userId: session.userId})
+        targetUserRecord = await ctx.database.get('blackjack_player_record', {userId})
       } else {
         targetUser = await replaceAtTags(session, targetUser)
         if (config.isEnableQQOfficialRobotMarkdownTemplate && session.platform === 'qq' && config.key !== '' && config.customTemplateId !== '') {
@@ -1884,13 +1896,16 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           const match = targetUser.match(userIdRegex);
           userId = match?.[1] ?? userId;
           username = match?.[2] ?? username;
-          targetUserRecord = await ctx.database.get('blackjack_player_record', {userId})
+          if (originalUserId === userId) {
+            targetUserRecord = await ctx.database.get('blackjack_player_record', {userId: targetUser})
+          } else {
+            targetUserRecord = await ctx.database.get('blackjack_player_record', {userId})
+          }
         }
       }
 
       if (targetUserRecord.length === 0) {
-        return sendMessage(session, `【@${sessionUserName}】\n查询对象：${username}
-无任何游戏记录。`, `查询玩家记录 加入游戏`)
+        return sendMessage(session, `【@${sessionUserName}】\n被查询对象无任何游戏记录。`, `查询玩家记录 加入游戏`)
       }
       const {win, lose, moneyChange, numberOf21, numberOfBlackJack, draw} = targetUserRecord[0]
       return sendMessage(session, `【@${sessionUserName}】\n查询对象：${targetUserRecord[0].username}
