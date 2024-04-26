@@ -595,10 +595,13 @@ ${allowZeroBetJoin && userMoney === 0 ? '检测到允许零投注！\n正在为�
       let isBalanceSufficient = true
       if (config.isBellaPluginPointsEnabledForCurrency) {
         const bellaSignIn = await ctx.database.get('bella_sign_in', {id: session.userId});
-        if (bellaSignIn.length === 0 && !allowZeroBetJoin) {
-          return await sendMessage(session, `【@${username}】\n您还没有货币记录哦，快去签到吧！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
+        if (bellaSignIn.length === 0) {
+          if (!allowZeroBetJoin) {
+            return await sendMessage(session, `【@${username}】\n您还没有货币记录哦，快去签到吧！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
+          }
+        } else {
+          userMoney = bellaSignIn[0].point;
         }
-        userMoney = bellaSignIn[0].point;
       } else {
 
         let getUserMonetary = await ctx.database.get('monetary', {uid});
