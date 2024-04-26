@@ -115,6 +115,14 @@ npm install koishi-plugin-card-21-game
 * [Wikipedia](https://zh.wikipedia.org/wiki/%E4%BA%8C%E5%8D%81%E4%B8%80%E9%BB%9E) - 黑杰克游戏规则
 * [WikiHow](https://zh.wikihow.com/%E7%8E%A921%E7%82%B9) - 黑杰克游戏技巧
 
-## 📄 License
+## 🐱 QQ 群
 
-MIT License © 2023
+- 956758505
+
+## ✨ License
+
+MIT License © 2024
+
+希望您喜欢这款插件！ 💫
+
+如有任何问题或建议，欢迎联系我哈~ 🎈

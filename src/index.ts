@@ -1,7 +1,6 @@
 import {Context, h, Keys, Schema, sleep} from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import {} from 'koishi-plugin-markdown-to-image-service'
-import {} from "@satorijs/adapter-qq";
 
 export const inject = {
   required: ['monetary', 'database'],
@@ -56,8 +55,12 @@ export const usage = `
 - \`blackJack.重新开始\`：在游戏结束后，重新开始游戏，清空所有记录，不返还筹码。
 - \`blackJack.排行榜 [number:number]\`：查看排行榜相关指令，可选 \`胜场\`，\`输场\`，\`平局场次\`，\`21点次数\`，\`黑杰克次数\`，\`损益\`。
 - \`blackJack.查询玩家记录 [targetUser:text]\`：查询玩家游戏记录信息，可选参数为目标玩家的 at 信息，若没有参数则默认为指令发送者。
-`
 
+## 🐱 QQ 群
+
+- 956758505`
+
+// pz* pzx*
 export interface Config {
   allowZeroBetJoin: boolean
   retractDelay: number
@@ -77,6 +80,7 @@ export interface Config {
   customTemplateId: string
   key: string
   numberOfMessageButtonsPerRow: number
+  isBellaPluginPointsEnabledForCurrency: boolean
   // key2: string
   // key3: string
 }
@@ -131,22 +135,39 @@ export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     transferFeeRate: Schema.number()
       .default(0.1).description(`转账收取的手续费比例。`),
+    isBellaPluginPointsEnabledForCurrency: Schema.boolean().default(false).description(`是否启用 Bella 签到插件的积分作为货币。`),
   }).description('费用设置'),
 ]) as any
 
+// smb*
 declare module 'koishi' {
   interface Tables {
     blackjack_game_record: BlackJackGameRecord
     blackjack_playing_record: BlackJackPlayingRecord
     blackjack_player_record: BlackJackPlayerRecord
     monetary: Monetary
+    bella_sign_in: BellaSignIn
   }
 }
 
+// jk*
 interface Monetary {
   uid: number
   currency: string
   value: number
+}
+
+export interface BellaSignIn {
+  id: string
+  time: string
+  point: number
+  count: number
+  current_point: number
+  working: boolean
+  stime: number
+  wpoint: number
+  wktimecard: number
+  wktimespeed: boolean
 }
 
 export interface BlackJackGameRecord {
@@ -205,6 +226,7 @@ const initialDeck = [
   '♠️A', '♠️2', '♠️3', '♠️4', '♠️5', '♠️6', '♠️7', '♠️8', '♠️9', '♠️10', '♠️J', '♠️Q', '♠️K'
 ]
 
+// zhs*
 export function apply(ctx: Context, config: Config) {
   const {
     allowZeroBetJoin,
@@ -382,19 +404,28 @@ export function apply(ctx: Context, config: Config) {
         return await sendMessage(session, `【@${sessionUserName}】\n未找到有效的转账金额。`, `转账`);
       }
 
-      // @ts-ignore
-      const uid = user.id;
-      const getUserMonetary = await ctx.database.get('monetary', {uid});
-      if (getUserMonetary.length === 0) {
-        await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
-        return await sendMessage(session, `【@${sessionUserName}】
+      let userMoney = 0
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        const bellaSignIn: BellaSignIn[] = await ctx.database.get('bella_sign_in', {id: session.userId});
+        if (bellaSignIn.length === 0) {
+          return await sendMessage(session, `【@${sessionUserName}】\n转账失败！\n您当没有货币记录哦，快去签到吧！`, `转账`);
+        }
+        userMoney = bellaSignIn[0].point;
+      } else {
+        // @ts-ignore
+        const uid = user.id;
+        const getUserMonetary = await ctx.database.get('monetary', {uid});
+        if (getUserMonetary.length === 0) {
+          await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
+          return await sendMessage(session, `【@${sessionUserName}】
 您还没有货币记录呢~
 无法进行转账操作哦！
 不过别担心！
 已经为您办理货币登记了呢~`, `转账`);
+        }
+        const userMonetary = getUserMonetary[0];
+        userMoney = userMonetary.value;
       }
-      const userMonetary = getUserMonetary[0];
-      const userMoney = userMonetary.value;
 
       if (userMoney < amount) {
         return await sendMessage(session, `【@${sessionUserName}】
@@ -413,21 +444,31 @@ export function apply(ctx: Context, config: Config) {
       }
       const newScore = userMoney - amount - transferFee;
 
-      const targetUser = await ctx.database.getUser(platform, userId);
-      if (!targetUser) {
-        return await sendMessage(session, `【@${sessionUserName}】\n转账失败！\n哎呀，我根本不认识他的说...`, `转账`)
-      }
-
-      await ctx.database.set('monetary', {uid}, {value: newScore});
-
-      const uid2 = targetUser.id;
-      const getUserMonetary2 = await ctx.database.get('monetary', {uid: uid2});
-
-      if (getUserMonetary2.length === 0) {
-        await ctx.database.create('monetary', {uid: uid2, value: amount, currency: 'default'});
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        const targetUser = await ctx.database.get('bella_sign_in', {id: userId});
+        if (targetUser.length === 0) {
+          return await sendMessage(session, `【@${sessionUserName}】\n转账失败！\n哎呀，我根本不认识他的说...\n或者说...他还没签到过呢！`, `转账`)
+        }
+        await ctx.database.set('bella_sign_in', {id: session.userId}, {point: newScore});
+        const targetUserPoint = targetUser[0].point
+        await ctx.database.set('bella_sign_in', {id: userId}, {point: targetUserPoint + amount});
       } else {
-        const userMonetary2 = getUserMonetary2[0];
-        await ctx.database.set('monetary', {uid: uid2}, {value: userMonetary2.value + amount});
+        const targetUser = await ctx.database.getUser(platform, userId);
+        if (!targetUser) {
+          return await sendMessage(session, `【@${sessionUserName}】\n转账失败！\n哎呀，我根本不认识他的说...`, `转账`)
+        }
+
+        await ctx.database.set('monetary', {uid}, {value: newScore});
+
+        const uid2 = targetUser.id;
+        const getUserMonetary2 = await ctx.database.get('monetary', {uid: uid2});
+
+        if (getUserMonetary2.length === 0) {
+          await ctx.database.create('monetary', {uid: uid2, value: amount, currency: 'default'});
+        } else {
+          const userMonetary2 = getUserMonetary2[0];
+          await ctx.database.set('monetary', {uid: uid2}, {value: userMonetary2.value + amount});
+        }
       }
 
       await sendMessage(session, `【@${sessionUserName}】
@@ -536,31 +577,47 @@ ${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n�
         return await sendMessage(session, `【@${username}】\n准备好投注金额，才可以加入游戏哦~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
       }
 
-      // @ts-ignore
-      const uid = user.id;
-      let getUserMonetary = await ctx.database.get('monetary', {uid});
-      if (getUserMonetary.length === 0) {
-        await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
-        getUserMonetary = await ctx.database.get('monetary', {uid});
-        if (!allowZeroBetJoin) {
-          return await sendMessage(session, `【@${username}】
+      let userMoney = 0
+      let isBalanceSufficient = true
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        const bellaSignIn = await ctx.database.get('bella_sign_in', {id: session.userId});
+        if (bellaSignIn.length === 0 && !allowZeroBetJoin) {
+          return await sendMessage(session, `【@${username}】\n您当前尚未有任何货币记录。`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
+        }
+        userMoney = bellaSignIn[0].point;
+      } else {
+        // @ts-ignore
+        const uid = user.id;
+        let getUserMonetary = await ctx.database.get('monetary', {uid});
+        if (getUserMonetary.length === 0) {
+          await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
+          getUserMonetary = await ctx.database.get('monetary', {uid});
+          if (!allowZeroBetJoin) {
+            return await sendMessage(session, `【@${username}】
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
 已经为您办理货币登记了呢~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`)
+          }
         }
-
+        const userMonetary = getUserMonetary[0]
+        userMoney = userMonetary.value
       }
-      const userMonetary = getUserMonetary[0]
-      let isBalanceSufficient = true
-      if (userMonetary.value < bet) {
+
+      if (userMoney < bet) {
         isBalanceSufficient = false
-        bet = userMonetary.value
+        bet = userMoney
       }
 
       const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
       await ctx.database.set('blackjack_player_record', {userId}, {moneyChange: playerRecord.moneyChange - bet});
-      await ctx.monetary.cost(uid, bet);
+
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        await ctx.database.set('bella_sign_in', {id: session.userId}, {point: userMoney - bet});
+      } else {
+        await ctx.monetary.cost(uid, bet);
+      }
+
       // 在游玩表中创建玩家
       await ctx.database.create('blackjack_playing_record', {channelId, userId, username, bet, playerHandIndex: 1});
 
@@ -603,10 +660,18 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
     }
 
     const player = playerInfo[0]
-    // @ts-ignore
-    const uid = user.id
-    // 把钱还给他
-    await ctx.monetary.gain(uid, player.bet)
+    if (config.isBellaPluginPointsEnabledForCurrency) {
+      const bellaSignIn = await ctx.database.get('bella_sign_in', {id: player.userId});
+      if (bellaSignIn.length !== 0) {
+        await ctx.database.set('bella_sign_in', {id: player.userId}, {point: bellaSignIn[0].point + player.bet});
+      }
+    } else {
+      // @ts-ignore
+      const uid = user.id
+      // 把钱还给他
+      await ctx.monetary.gain(uid, player.bet)
+    }
+
     // 从游戏中移除玩家
     await ctx.database.remove('blackjack_playing_record', {channelId, userId});
 
@@ -672,8 +737,16 @@ ${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n
           for (const player of getPlayers) {
             if (player.bet > minBet) {
               const refundAmount = player.bet - minBet;
-              const uid = (await ctx.database.getUser(platform, player.userId)).id
-              await ctx.monetary.gain(uid, refundAmount);
+              if (config.isBellaPluginPointsEnabledForCurrency) {
+                const bellaSignIn = await ctx.database.get('bella_sign_in', {id: player.userId});
+                if (bellaSignIn.length !== 0) {
+                  await ctx.database.set('bella_sign_in', {id: player.userId}, {point: bellaSignIn[0].point + refundAmount});
+                }
+              } else {
+                const uid = (await ctx.database.getUser(platform, player.userId)).id
+                await ctx.monetary.gain(uid, refundAmount);
+              }
+
               await ctx.database.set('blackjack_playing_record', {channelId, userId: player.userId}, {bet: minBet});
             }
           }
@@ -896,7 +969,6 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
 【要牌】或【停牌】`, `要牌 停牌`)
     });
 
-
   // tx*
   ctx.command('blackJack.投降', '投降').action(async ({session}) => {
     const sessionUserName = await getSessionUserName(session);
@@ -934,9 +1006,17 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
 
     // 投降输一半
     const refundAmount = (player.bet + player.betAmount) / 2
-    // @ts-ignore
-    const uid = user.id
-    await ctx.monetary.gain(uid, refundAmount)
+    if (config.isBellaPluginPointsEnabledForCurrency) {
+      const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+      if (bellaSignIn.length !== 0) {
+        await ctx.database.set('bella_sign_in', {id: userId}, {point: bellaSignIn[0].point + refundAmount});
+      }
+    } else {
+      // @ts-ignore
+      const uid = user.id
+      await ctx.monetary.gain(uid, refundAmount)
+    }
+
     const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
     await ctx.database.set('blackjack_player_record', {userId}, {
       moneyChange: playerRecord.moneyChange + refundAmount,
@@ -1071,19 +1151,36 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       }
 
       // 检查投注牌型的玩家是否有足够的货币押注
-      // @ts-ignore
-      const uid = user.id;
-      const [userMonetary] = await ctx.database.get('monetary', {uid});
+      let userMoney = 0;
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+        if (bellaSignIn.length !== 0) {
+          userMoney = bellaSignIn[0].point
+        }
+      } else {
+        // @ts-ignore
+        const uid = user.id;
+        const [userMonetary] = await ctx.database.get('monetary', {uid});
+        userMoney = userMonetary.value
+      }
 
-      if (userMonetary.value < betAmount) {
-        return await sendMessage(session, `【@${sessionUserName}】\n你怎么这么穷惹~ 没钱了啦！\n你当前的货币数额为：【${userMonetary.value}】个。`, `投注牌型`);
+      if (userMoney < betAmount) {
+        return await sendMessage(session, `【@${sessionUserName}】\n你怎么这么穷惹~ 没钱了啦！\n你当前的货币数额为：【${userMoney}】个。`, `投注牌型`);
       }
 
       const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
       await ctx.database.set('blackjack_player_record', {userId}, {
         moneyChange: playerRecord.moneyChange - betAmount,
       });
-      await ctx.monetary.cost(uid, betAmount);
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+        if (bellaSignIn.length !== 0) {
+          await ctx.database.set('bella_sign_in', {id: userId}, {point: bellaSignIn[0].point - betAmount});
+        }
+      } else {
+        await ctx.monetary.cost(uid, betAmount);
+      }
+
       // 花了钱，那么，就为该玩家更新游玩信息吧
       await ctx.database.set('blackjack_playing_record', {channelId, userId}, {
         betPlayerUserId: betPlayer.userId,
@@ -1091,39 +1188,6 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         betType,
         betAmount
       })
-
-      // 根据 betType 获取倍率信息
-      enum CardType {
-        Pair = 1,
-        FlushPair = 30,
-        Flush = 5,
-        Straight = 10,
-        ThreeOfAKind = 25,
-        StraightFlush = 25,
-        FlushThreeOfAKind = 50,
-        SixDragonsBlackjack = 100
-      }
-
-      function getCardTypeMultiplier(betType: string): number {
-        switch (betType) {
-          case "对子":
-            return CardType.Pair;
-          case "同花对子":
-            return CardType.FlushPair;
-          case "同花":
-            return CardType.Flush;
-          case "顺":
-            return CardType.Straight;
-          case "三条":
-            return CardType.ThreeOfAKind;
-          case "同花顺":
-            return CardType.StraightFlush;
-          case "同花三条":
-            return CardType.FlushThreeOfAKind;
-          default:
-            throw new Error("未知牌型");
-        }
-      }
 
       const multiplier = getCardTypeMultiplier(betType);
 
@@ -1624,7 +1688,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
   })
   // fp*
   ctx.command('blackJack.分牌', '将牌分为两手').action(async ({session}) => {
-    // 分牌：游戏已经开始、玩家在游戏里、当前轮到这位玩家、判断该玩家是否投降、两张牌且是对子、检查钱是否够分牌、增加牌序
+    // 分牌：游戏已经开始、玩家在游戏里、当前轮到这位玩家、判断该玩家是否投降、两张牌且是对子、检查钱是否够分牌、为分牌消耗余额、增加牌序
     let {channelId, userId, user, username} = session
     if (!channelId) {
       channelId = `privateChat_${userId}`;
@@ -1667,17 +1731,38 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       return await sendMessage(session, `【@${username}】\n你的牌型不能分牌呢~ 要是对子才可以！`, ``
       )
     }
-    // @ts-ignore
-    const uid = user.id;
-    const [userMonetary] = await ctx.database.get('monetary', {uid});
-    if (userMonetary.value < player.bet) {
+    let userMoney = 0;
+    if (config.isBellaPluginPointsEnabledForCurrency) {
+      const bellaSignIn: BellaSignIn[] = await ctx.database.get('bella_sign_in', {id: userId});
+      if (bellaSignIn.length !== 0) {
+        userMoney = bellaSignIn[0].point;
+      }
+    } else {
+      // @ts-ignore
+      const uid = user.id;
+      const [userMonetary] = await ctx.database.get('monetary', {uid});
+      userMoney = userMonetary.value;
+    }
+
+    if (userMoney < player.bet) {
       return await sendMessage(session, `【@${username}】
-您的剩余货币为：【${userMonetary.value}】
+您的剩余货币为：【${userMoney}】
 想要分牌赢大奖？🎁
 可惜！
 分牌要花费货币：【${player.bet}】
 下次记得留钱分牌哦！😉`, `要牌 停牌`
       )
+    }
+
+    if (config.isBellaPluginPointsEnabledForCurrency) {
+      const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+      if (bellaSignIn.length !== 0) {
+        await ctx.database.set('bella_sign_in', {id: userId}, {point: userMoney - player.bet});
+      }
+    } else {
+      // @ts-ignore
+      const uid = user.id;
+      await ctx.monetary.cost(uid, player.bet);
     }
     const newPlayerHand1 = playerHand[0];
     const newPlayerHand2 = playerHand[1];
@@ -1754,13 +1839,23 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
       )
     }
     // 更新筹码前首先要看当前玩家钱够不够
-    // @ts-ignore
-    const uid = user.id
-    const [userMonetary] = await ctx.database.get('monetary', {uid})
-    if (userMonetary.value < player.bet) {
+    let userMoney = 0;
+    if (config.isBellaPluginPointsEnabledForCurrency) {
+      const bellaSignIn: BellaSignIn[] = await ctx.database.get('bella_sign_in', {id: userId});
+      if (bellaSignIn.length !== 0) {
+        userMoney = bellaSignIn[0].point;
+      }
+    } else {
+      // @ts-ignore
+      const uid = user.id
+      const [userMonetary] = await ctx.database.get('monetary', {uid})
+      userMoney = userMonetary.value
+    }
+
+    if (userMoney < player.bet) {
       return await sendMessage(session, `【@${username}】
 加倍失败了呢~
-您的余额为：【${userMonetary.value}】
+您的余额为：【${userMoney}】
 无法支付加倍所需货币：【${player.bet}】
 下次别忘存钱加倍呀！`, `要牌 停牌`
       )
@@ -1770,7 +1865,17 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     await ctx.database.set('blackjack_player_record', {userId}, {
       moneyChange: playerRecord.moneyChange - player.bet,
     });
-    await ctx.monetary.cost(uid, player.bet)
+
+    if (config.isBellaPluginPointsEnabledForCurrency) {
+      const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+      if (bellaSignIn.length !== 0) {
+        await ctx.database.set('bella_sign_in', {id: userId}, {point: userMoney - player.bet});
+      }
+    } else {
+      // @ts-ignore
+      const uid = user.id
+      await ctx.monetary.cost(uid, player.bet)
+    }
     await ctx.database.set('blackjack_playing_record', {
       channelId,
       userId,
@@ -1963,6 +2068,39 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     });
 
   // hs*
+  function getCardTypeMultiplier(betType: string): number {
+    // 根据 betType 获取倍率信息
+    enum CardType {
+      Pair = 1,
+      FlushPair = 30,
+      Flush = 5,
+      Straight = 10,
+      ThreeOfAKind = 25,
+      StraightFlush = 25,
+      FlushThreeOfAKind = 50,
+      SixDragonsBlackjack = 100
+    }
+
+    switch (betType) {
+      case "对子":
+        return CardType.Pair;
+      case "同花对子":
+        return CardType.FlushPair;
+      case "同花":
+        return CardType.Flush;
+      case "顺":
+        return CardType.Straight;
+      case "三条":
+        return CardType.ThreeOfAKind;
+      case "同花顺":
+        return CardType.StraightFlush;
+      case "同花三条":
+        return CardType.FlushThreeOfAKind;
+      default:
+        throw new Error("未知牌型");
+    }
+  }
+
   async function replaceAtTags(session, content: string): Promise<string> {
     // 正则表达式用于匹配 at 标签
     const atRegex = /<at id="(\d+)"(?: name="([^"]*)")?\/>/g;
@@ -2209,8 +2347,17 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
       const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
       const reward = (getPlayerRecords.length * record.bet) / totalWinners;
       settlementString += `【${record.username}】：【+${reward}】\n`;
-      const uid = (await ctx.database.getUser(platform, record.userId)).id
-      await ctx.monetary.gain(uid, reward)
+      if (config.isBellaPluginPointsEnabledForCurrency) {
+        const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+        if (bellaSignIn.length !== 0) {
+          await ctx.database.set('bella_sign_in', {id: userId}, {point: bellaSignIn[0].point + reward});
+        }
+      } else {
+        const uid = (await ctx.database.getUser(platform, userId)).id
+        await ctx.monetary.gain(uid, reward)
+      }
+
+      // 游戏记录
       await ctx.database.set('blackjack_player_record', {userId}, {moneyChange: playerRecord.moneyChange + reward});
       if (score === 21 && playerHand.length === 2) {
         await ctx.database.set('blackjack_player_record', {userId}, {
@@ -2400,6 +2547,8 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
     }
 
     const getPlayerRecords = await ctx.database.get('blackjack_playing_record', {channelId});
+
+    // 买保险
     for (const record of getPlayerRecords) {
       const {playerHand} = record;
       let {channelId, userId, playerHandIndex, insurance, isBuyInsurance} = record;
@@ -2411,6 +2560,7 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
       await ctx.database.set('blackjack_playing_record', {channelId, userId, playerHandIndex}, {insurance})
     }
 
+    // 牌型
     for (const record of getPlayerRecords) {
       const {playerHand} = record;
       const score = calculateHandScore(playerHand);
@@ -2504,16 +2654,30 @@ ${(bankerScore > 21) ? '💥 庄家爆掉了！' : ''}${(bankerHand.length === 2
         }
       }
     }
+
     // 开始结算加钱 暂时不生成最终字符串
     const getThisGuildPlayers = await ctx.database.get('blackjack_playing_record', {channelId})
     for (const thisGuildPlayer of getThisGuildPlayers) {
       const {isSurrender, win, bet, insurance, betWin, userId} = thisGuildPlayer
       if (!isSurrender) {
         const settlement = win + insurance + betWin
-        const uid = (await ctx.database.getUser(platform, userId)).id
-        const [userMonetary] = await ctx.database.get('monetary', {uid})
-        const value = settlement + userMonetary.value
-        await ctx.database.set('monetary', {uid}, {value})
+        if (config.isBellaPluginPointsEnabledForCurrency) {
+          const bellaSignIn = await ctx.database.get('bella_sign_in', {id: userId});
+          if (bellaSignIn.length !== 0) {
+            const result = bellaSignIn[0].point + settlement
+            if (result < 0) {
+              await ctx.database.set('bella_sign_in', {id: userId}, {point: 0});
+            } else {
+              await ctx.database.set('bella_sign_in', {id: userId}, {point: result});
+            }
+          }
+        } else {
+          const uid = (await ctx.database.getUser(platform, userId)).id
+          const [userMonetary] = await ctx.database.get('monetary', {uid})
+          const userMoney = userMonetary.value
+          const value = settlement + userMoney
+          await ctx.database.set('monetary', {uid}, {value})
+        }
       }
     }
 
