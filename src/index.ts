@@ -345,6 +345,8 @@ export function apply(ctx: Context, config: Config) {
       content = await replaceAtTags(session, content)
 
       const {user, platform} = session;
+      // @ts-ignore
+      const uid = user.id;
 
       let userId = '';
       let username = '';
@@ -412,8 +414,6 @@ export function apply(ctx: Context, config: Config) {
         }
         userMoney = bellaSignIn[0].point;
       } else {
-        // @ts-ignore
-        const uid = user.id;
         const getUserMonetary = await ctx.database.get('monetary', {uid});
         if (getUserMonetary.length === 0) {
           await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
@@ -484,6 +484,8 @@ export function apply(ctx: Context, config: Config) {
   ctx.command('blackJack.加入游戏 [bet:number]', '加入游戏并投注筹码')
     .action(async ({session}, bet) => {
       let {channelId, userId, username, user} = session;
+      // @ts-ignore
+      const uid = user.id;
       if (!channelId) {
 
         channelId = `privateChat_${userId}`;
@@ -586,8 +588,7 @@ ${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n�
         }
         userMoney = bellaSignIn[0].point;
       } else {
-        // @ts-ignore
-        const uid = user.id;
+
         let getUserMonetary = await ctx.database.get('monetary', {uid});
         if (getUserMonetary.length === 0) {
           await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
@@ -625,10 +626,10 @@ ${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n�
       const numberOfPlayers = (await ctx.database.get('blackjack_playing_record', {channelId})).length;
 
       return await sendMessage(session, `【@${username}】
-${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n' : ''}${bet === 0 && allowZeroBetJoin && userMonetary.value !== 0 ? '检测到允许零投注！\n\n' : ''}投注成功！
+${!isBalanceSufficient ? '检测到余额不足！\n已自动向下合并！\n\n' : ''}${bet === 0 && allowZeroBetJoin && userMoney !== 0 ? '检测到允许零投注！\n\n' : ''}投注成功！
 您正式加入游戏了！
 投注筹码数额为：【${bet}】
-剩余通用货币为：【${userMonetary.value - bet}】
+剩余通用货币为：【${userMoney - bet}】
 当前玩家人数：${numberOfPlayers} 名！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
     });
   // q*
@@ -976,6 +977,8 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
       return await sendMessage(session, `【@${sessionUserName}】\n投降功能已关闭。`, ``)
     }
     let {channelId, userId, user, username} = session
+    // @ts-ignore
+    const uid = user.id
     if (!channelId) {
       channelId = `privateChat_${userId}`;
     }
@@ -1012,8 +1015,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         await ctx.database.set('bella_sign_in', {id: userId}, {point: bellaSignIn[0].point + refundAmount});
       }
     } else {
-      // @ts-ignore
-      const uid = user.id
+
       await ctx.monetary.gain(uid, refundAmount)
     }
 
@@ -1089,6 +1091,8 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
 示例：投注 1 7 50`, `投注牌型`)
       }
       let {channelId, userId, user, username} = session
+      // @ts-ignore
+      const uid = user.id;
       if (!channelId) {
         channelId = `privateChat_${userId}`;
       }
@@ -1158,8 +1162,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
           userMoney = bellaSignIn[0].point
         }
       } else {
-        // @ts-ignore
-        const uid = user.id;
+
         const [userMonetary] = await ctx.database.get('monetary', {uid});
         userMoney = userMonetary.value
       }
@@ -1884,7 +1887,7 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
     return await sendMessage(session, `【@${username}】
 加倍成功！
 您的筹码已更新为：【${player.bet * 2}】
-您的余额为：【${userMonetary.value - player.bet}】
+您的余额为：【${userMoney - player.bet}】
 
 您的手牌为：【${playerHand.join('')}】
 您当前的点数为：【${calculateHandScore(playerHand)}】
