@@ -532,27 +532,39 @@ export function apply(ctx: Context, config: Config) {
         return
       }
       if (!bet) {
-        // @ts-ignore
-        const uid = user.id;
-        let getUserMonetary = await ctx.database.get('monetary', {uid});
-        if (getUserMonetary.length === 0) {
-          await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
-          getUserMonetary = await ctx.database.get('monetary', {uid});
-          if (!allowZeroBetJoin) {
-            return await sendMessage(session, `【@${username}】
+        let userMoney = 0
+        if (config.isBellaPluginPointsEnabledForCurrency) {
+          const bellaSignIn = await ctx.database.get('bella_sign_in', {id: session.userId});
+          if (bellaSignIn.length === 0) {
+            if (!allowZeroBetJoin) {
+              return await sendMessage(session, `【@${username}】\n您还没有货币记录哦，快去签到吧！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
+            }
+          } else {
+            userMoney = bellaSignIn[0].point;
+          }
+        } else {
+          let getUserMonetary = await ctx.database.get('monetary', {uid});
+          if (getUserMonetary.length === 0) {
+            await ctx.database.create('monetary', {uid, value: 0, currency: 'default'});
+            getUserMonetary = await ctx.database.get('monetary', {uid});
+            if (!allowZeroBetJoin) {
+              return await sendMessage(session, `【@${username}】
 您还没有货币记录呢~
 没办法投注的说...
 不过别担心！
 已经为您办理货币登记了呢~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`)
+            }
           }
+          const userMonetary = getUserMonetary[0]
+          userMoney = userMonetary.value
         }
-        const userMonetary = getUserMonetary[0]
-        const isBalanceSufficient = allowZeroBetJoin ? userMonetary.value < 0 : userMonetary.value <= 0
+
+        const isBalanceSufficient = allowZeroBetJoin ? userMoney < 0 : userMoney <= 0
         if (isBalanceSufficient) {
           return await sendMessage(session, `【@${username}】
 抱歉~
 您没钱啦！
-您当前的货币为：【${userMonetary.value}】
+您当前的货币为：【${userMoney}】
 
 赶快去赚些钱吧~
 加入游戏的大门随时为您敞开！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
@@ -562,12 +574,12 @@ export function apply(ctx: Context, config: Config) {
 希望你能玩的开心！
 
 游玩需要投注哦 ~
-您的货币余额为：【${userMonetary.value}】
-${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, `${allowZeroBetJoin && userMonetary.value === 0 ? '' : `输入投注金额`}`);
-        if (allowZeroBetJoin && userMonetary.value === 0) {
+您的货币余额为：【${userMoney}】
+${allowZeroBetJoin && userMoney === 0 ? '检测到允许零投注！\n正在为您办理加入游戏手续中...' : '请输入您的【投注金额】：'}`, `${allowZeroBetJoin && userMoney === 0 ? '' : `输入投注金额`}`);
+        if (allowZeroBetJoin && userMoney === 0) {
           await sleep(joinGameProcedureWaitTimeInSeconds * 1000)
         }
-        bet = allowZeroBetJoin && userMonetary.value === 0 ? 0 : Number(await session.prompt())
+        bet = allowZeroBetJoin && userMoney === 0 ? 0 : Number(await session.prompt())
         if (isNaN(bet as number)) {
           // 处理无效输入的逻辑
           return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`)
@@ -584,7 +596,7 @@ ${allowZeroBetJoin && userMonetary.value === 0 ? '检测到允许零投注！\n�
       if (config.isBellaPluginPointsEnabledForCurrency) {
         const bellaSignIn = await ctx.database.get('bella_sign_in', {id: session.userId});
         if (bellaSignIn.length === 0 && !allowZeroBetJoin) {
-          return await sendMessage(session, `【@${username}】\n您当前尚未有任何货币记录。`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
+          return await sendMessage(session, `【@${username}】\n您还没有货币记录哦，快去签到吧！`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
         }
         userMoney = bellaSignIn[0].point;
       } else {
