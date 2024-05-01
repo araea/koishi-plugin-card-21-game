@@ -2065,6 +2065,9 @@ ${(newThisPlayerInfo.playerHandIndex > 1) ? distributional : noDistributional}`
           return await sendMessage(session, `【@${username}】\n新的玩家名字已经存在，请重新输入。`, `改名`)
         }
       }
+      if (newPlayerName.includes("@everyone")) {
+        return await sendMessage(session, `【@${username}】\n新的玩家名字不合法，请重新输入。`, `改名`)
+      }
       // 玩家记录表操作
       const userRecord = await ctx.database.get('blackjack_player_record', {userId});
       if (userRecord.length === 0) {
