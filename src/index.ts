@@ -625,6 +625,11 @@ ${allowZeroBetJoin && userMoney === 0 ? '检测到允许零投注！\n正在为�
         bet = userMoney
       }
 
+      if (bet === 0 && !allowZeroBetJoin) {
+        return await sendMessage(session, `【@${username}】
+不允许零投注哦~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`)
+      }
+
       const [playerRecord] = await ctx.database.get('blackjack_player_record', {userId});
       await ctx.database.set('blackjack_player_record', {userId}, {moneyChange: playerRecord.moneyChange - bet});
 
