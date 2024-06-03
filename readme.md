@@ -55,6 +55,7 @@ npm install koishi-plugin-card-21-game
 
 ### 游戏操作设置
 
+- `minimumRequiredCurrencyForGameEntry`：加入游戏所需的最少货币数量，默认为 0。
 - `dealerSpeed`：庄家要牌的速度，默认值为 2，单位是秒。
 - `betMaxDuration`：投注牌型操作的等待时长，默认值为 30，单位是秒。
 - `buyInsuranceMaxDuration`：买保险操作的等待时长，默认值为 10，单位是秒。

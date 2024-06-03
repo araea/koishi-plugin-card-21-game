@@ -81,6 +81,7 @@ export interface Config {
   key: string
   numberOfMessageButtonsPerRow: number
   isBellaPluginPointsEnabledForCurrency: boolean
+  minimumRequiredCurrencyForGameEntry: number
   // key2: string
   // key3: string
 }
@@ -115,6 +116,7 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('排行榜设置'),
 
   Schema.object({
+    minimumRequiredCurrencyForGameEntry: Schema.number().min(0).default(0).description(`加入游戏所需的最低货币数量。`),
     dealerSpeed: Schema.number()
       .min(0).default(2).description(`庄家要牌的速度，单位是秒。`),
     betMaxDuration: Schema.number()
@@ -585,6 +587,10 @@ ${allowZeroBetJoin && userMoney === 0 ? '检测到允许零投注！\n正在为�
           return await sendMessage(session, `【@${username}】\n输入无效，重新来一次吧~`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`)
         }
         // if (!bet)
+      }
+      // 最少所需投注
+      if (config.minimumRequiredCurrencyForGameEntry > 0 && bet < config.minimumRequiredCurrencyForGameEntry) {
+        return await sendMessage(session, `【@${username}】\n您的投注不够呢！\n最少所需投注为：【${config.minimumRequiredCurrencyForGameEntry}】`, `改名 无庄模式 开始游戏 退出游戏 加入游戏 转账`);
       }
       // 检查是否存在有效的投注金额
       if (typeof bet !== 'number' || (allowZeroBetJoin ? bet < 0 : bet <= 0)) {
