@@ -628,7 +628,7 @@ ${allowZeroBetJoin && userMoney === 0 ? '检测到允许零投注！\n正在为�
 
       if (userMoney < bet) {
         isBalanceSufficient = false
-        bet = userMoney
+        bet = userMoney <= 0 ? 0 : userMoney
       }
 
       if (bet === 0 && !allowZeroBetJoin) {
