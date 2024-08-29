@@ -1345,7 +1345,7 @@ ${(!enableCardBetting || !enableSurrender) ? `正在为庄家发牌...\n\n请庄
         , `投降`)
     });
 
-  // bx*
+  // mbx*
   // 注册买保险的指令
   ctx.command('blackJack.买保险', '买保险').action(async ({session}) => {
     let {channelId, userId, username} = session
@@ -1535,13 +1535,18 @@ ${(await settleBlackjackGame(platform, channelId))}
         playerIndex: newGameInfo.currentPlayerIndex,
         playerHandIndex: newGameInfo.currentPlayerHandIndex
       })
-      const dealtCardToPunter = await dealCards(channelId, deck)
-      await ctx.database.set('blackjack_playing_record', {
-        channelId,
-        userId: newThisPlayerInfo.userId,
-        playerHandIndex: newThisPlayerInfo.playerHandIndex
-      }, {playerHand: [`${dealtCardToPunter}`]})
-      await ctx.database.set('blackjack_game_record', {channelId}, {deck})
+
+      let dealtCardToPunter = ''
+      if (newThisPlayerInfo.playerHand.length === 0) {
+        dealtCardToPunter = await dealCards(channelId, deck)
+        await ctx.database.set('blackjack_playing_record', {
+          channelId,
+          userId: newThisPlayerInfo.userId,
+          playerHandIndex: newThisPlayerInfo.playerHandIndex
+        }, {playerHand: [`${dealtCardToPunter}`]})
+        await ctx.database.set('blackjack_game_record', {channelId}, {deck})
+      }
+
       const distributional = `${(newThisPlayerInfo.playerHand.length === 1) ? '但幸运的是，您还有机会！' : ''}
 您的手牌为：【${newThisPlayerInfo.playerHand.join('')}】
 请选择您的操作：
@@ -1686,13 +1691,18 @@ ${(await settleBlackjackGame(platform, channelId))}
       playerIndex: newGameInfo.currentPlayerIndex,
       playerHandIndex: newGameInfo.currentPlayerHandIndex
     })
-    const dealtCardToPunter = await dealCards(channelId, deck)
-    await ctx.database.set('blackjack_playing_record', {
-      channelId,
-      userId: newThisPlayerInfo.userId,
-      playerHandIndex: newThisPlayerInfo.playerHandIndex
-    }, {playerHand: [`${dealtCardToPunter}`]})
-    await ctx.database.set('blackjack_game_record', {channelId}, {deck})
+
+    let dealtCardToPunter = ''
+    if (newThisPlayerInfo.playerHand.length === 0) {
+      dealtCardToPunter = await dealCards(channelId, deck)
+      await ctx.database.set('blackjack_playing_record', {
+        channelId,
+        userId: newThisPlayerInfo.userId,
+        playerHandIndex: newThisPlayerInfo.playerHandIndex
+      }, {playerHand: [`${dealtCardToPunter}`]})
+      await ctx.database.set('blackjack_game_record', {channelId}, {deck})
+    }
+
     const distributional = `${(newThisPlayerInfo.playerHand.length === 1) ? '检测到你还有牌可以要！' : ''}
 您的${(newThisPlayerInfo.playerHand.length === 1) ? '下一套' : ''}手牌为：【${newThisPlayerInfo.playerHand.join('')}】
 请选择您的操作：
