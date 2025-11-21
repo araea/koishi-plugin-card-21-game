@@ -1,7 +1,8 @@
-# koishi-plugin-card-21-game
+koishi-plugin-bull-card
+========================
 
-[<img alt="github" src="https://img.shields.io/badge/github-araea/card_21_game-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/araea/koishi-plugin-card-21-game)
-[<img alt="npm" src="https://img.shields.io/npm/v/koishi-plugin-card-21-game.svg?style=for-the-badge&color=fc8d62&logo=npm" height="20">](https://www.npmjs.com/package/koishi-plugin-card-21-game)
+[<img alt="github" src="https://img.shields.io/badge/github-araea/bull_card-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/araea/koishi-plugin-bull-card)
+[<img alt="npm" src="https://img.shields.io/npm/v/koishi-plugin-bull-card.svg?style=for-the-badge&color=fc8d62&logo=npm" height="20">](https://www.npmjs.com/package/koishi-plugin-bull-card)
 
 Koishi 的 21 点（黑杰克）纸牌游戏插件。完整赌场规则。
 
