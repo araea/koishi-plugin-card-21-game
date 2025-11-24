@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-card-21-game",
   "description": "Koishi 的 21 点（黑杰克）纸牌游戏插件。完整赌场规则。",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [

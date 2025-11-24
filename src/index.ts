@@ -1097,6 +1097,33 @@ export function apply(ctx: Context, config: Config) {
         }
     });
 
+  ctx.command("blackjack.排行", "查看盈亏排行榜")
+      .alias("blackjack.rank")
+      .option("limit", "-l <number> 显示数量", { fallback: 10 })
+      .action(async ({ options }) => {
+          try {
+              const data = await ctx.database.select("blackjack_stats")
+                  .orderBy("totalProfit", "desc") // 按利润降序
+                  .limit(Math.min(options.limit, 20)) // 限制最大查询20条
+                  .execute();
+
+              if (data.length === 0) return "📊 暂时没有排名数据。";
+
+              const list = data.map((s, index) => {
+                  const symbol = s.totalProfit > 0 ? "+" : "";
+                  // 前三名加奖牌图标
+                  const prefix = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
+                  return `${prefix} ${s.username}: ${symbol}${s.totalProfit}`;
+              }).join("\n");
+
+              return `🏆 21点 盈亏排行榜 (Top ${data.length})\n` +
+                     `----------------\n` +
+                     `${list}`;
+          } catch (e) {
+              return "⚠️ 查询排行榜失败，数据库可能未初始化。";
+          }
+      });
+
   // Cleanup
   ctx.on("dispose", () => {
       for (const game of games.values()) {
