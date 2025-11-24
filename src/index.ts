@@ -2,10 +2,7 @@ import { Context, Schema, sleep } from "koishi";
 import {} from "koishi-plugin-monetary";
 
 export const name = "card-21-game";
-export const inject = {
-  optional: ["monetary"],
-  required: ["database"]
-};
+export const inject = ["database","monetary"];
 
 // ========================================================================
 // 📄 Usage & Metadata
