@@ -107,7 +107,7 @@ export class Game {
   // --- 加入阶段 ---
 
   async join(platform: string, userId: string, username: string, bet: number): Promise<string> {
-    if (this.phase !== Phase.Joining) return '🚫 游戏已经开始了。'
+    if (this.phase !== Phase.Joining) return '⚠️ 游戏已经开始了。'
     if (this.players.some((player) => player.userId === userId)) return '⚠️ 你已经加入了。'
     if (bet < this.config.minBet) return `⚠️ 最低下注金额为 ${this.config.minBet}。`
     if (this.busy) return ''
@@ -116,7 +116,7 @@ export class Game {
     try {
       if (!await this.economy.charge(platform, userId, bet)) {
         const have = await this.economy.balance(platform, userId)
-        return `💸 余额不足，无法下注 ${bet}（当前 ${have}）。`
+        return `⚠️ 余额不足，无法下注 ${bet}（当前 ${have}）。`
       }
       this.players.push({ userId, username, platform, bet, hands: [newHand(bet)], handIndex: 0 })
     } finally {
@@ -129,22 +129,22 @@ export class Game {
 
   private async joinTimeout() {
     if (!this.players.length) {
-      await this.say('🕐 无人加入，游戏取消。')
+      await this.say('⚠️ 无人加入，游戏取消。')
       return this.end()
     }
     if (this.pvp && this.players.length < 2) {
-      await this.say('🕐 人数不足，PVP 模式取消，注金已退还。')
+      await this.say('⚠️ 人数不足，PVP 模式取消，注金已退还。')
       await this.refundAll()
       return this.end()
     }
-    await this.say('🕐 准备时间结束，自动开始！')
+    await this.say('⏳ 准备时间结束，自动开始。')
     await this.start()
   }
 
   async start(): Promise<string> {
-    if (this.phase !== Phase.Joining) return '🚫 不在准备阶段。'
-    if (!this.players.length) return '🚫 还没有人加入。'
-    if (this.pvp && this.players.length < 2) return '🚫 PVP 模式至少需要 2 人。'
+    if (this.phase !== Phase.Joining) return '⚠️ 不在准备阶段。'
+    if (!this.players.length) return '⚠️ 还没有人加入。'
+    if (this.pvp && this.players.length < 2) return '⚠️ PVP 模式至少需要 2 人。'
 
     this.clear()
     this.phase = Phase.Dealing
@@ -156,11 +156,11 @@ export class Game {
       if (!round) await sleep(500)
     }
 
-    await this.say(this.table('🃏 游戏开始！发牌完毕。'))
+    await this.say(this.table('✅ 游戏开始，发牌完毕。'))
 
     if (!this.pvp && this.dealer[0]?.rank === 'A') {
       this.phase = Phase.Insurance
-      await this.say('💡 庄家明牌为 A，是否购买保险？（回复「保险」或「跳过」）')
+      await this.say('⚠️ 庄家明牌为 A，是否购买保险？（回复「保险」或「跳过」）')
       this.wait(() => this.surrenderPhase(), 10)
       return ''
     }
@@ -170,7 +170,7 @@ export class Game {
 
   private async surrenderPhase() {
     this.phase = Phase.Surrender
-    await this.say('🏳️ 投降阶段：牌型不佳可输入「投降」（输一半）。\n⏳ 5 秒后进入玩家回合。')
+    await this.say('⚠️ 投降阶段：牌型不佳可输入「投降」（输一半）。\n⏳ 5 秒后进入玩家回合。')
     this.wait(() => this.playerTurns(), 5)
   }
 
@@ -205,14 +205,14 @@ export class Game {
 
     if (isBlackjack(hand)) {
       hand.finished = true
-      await this.say(`⚡️ ${player.username} 拿到 Blackjack！`)
+      await this.say(`✅ ${player.username} 拿到 Blackjack。`)
       return this.next()
     }
 
     const total = score(hand.cards)
     if (total >= 21) {
       hand.finished = true
-      if (total > 21) await this.say(`💥 ${player.username} 爆牌（${total}）`)
+      if (total > 21) await this.say(`❌ ${player.username} 爆牌（${total}）`)
       return this.next()
     }
 
@@ -221,10 +221,10 @@ export class Game {
     if (this.canSplit(player)) actions.push('分牌')
 
     const which = player.hands.length > 1 ? `（手牌 ${player.handIndex + 1}/${player.hands.length}）` : ''
-    await this.say(`👉 轮到 ${player.username}${which}\n🃏 当前牌：${format(hand.cards)} [${total}]\n指令：${actions.join(' | ')}`)
+    await this.say(`轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n指令：${actions.join(' | ')}`)
 
     this.wait(async () => {
-      await this.say(`⏰ ${player.username} 操作超时，自动停牌。`)
+      await this.say(`⏳ ${player.username} 操作超时，自动停牌。`)
       await this.say(await this.hit(player.userId, 'stand'))
     }, this.config.playerTurnTimeout)
   }
@@ -249,7 +249,7 @@ export class Game {
       if (action === 'stand') {
         hand.finished = true
         this.wait(() => this.advance(), 0.1)
-        return `🛑 ${player.username} 停牌 [${score(hand.cards)}]`
+        return `${player.username} 停牌 [${score(hand.cards)}]`
       }
 
       if (action === 'hit') {
@@ -258,23 +258,23 @@ export class Game {
         const total = score(hand.cards)
         if (total >= 21) hand.finished = true
         this.wait(() => this.advance(), 0.5)
-        return `🃏 ${player.username} 要牌：${format([card])} -> [${total}]`
+        return `${player.username} 要牌：${format([card])} → [${total}]`
       }
 
       if (action === 'double') {
         if (!this.canDouble(hand)) return this.pvp ? '⚠️ PVP 模式不支持加倍。' : '⚠️ 只能在首轮加倍。'
-        if (!await this.economy.charge(player.platform, player.userId, hand.bet)) return '💸 余额不足，无法加倍。'
+        if (!await this.economy.charge(player.platform, player.userId, hand.bet)) return '⚠️ 余额不足，无法加倍。'
         hand.bet *= 2
         hand.doubled = true
         const card = this.draw()
         hand.cards.push(card)
         hand.finished = true
         this.wait(() => this.advance(), 1)
-        return `💰 ${player.username} 加倍！注金 ${hand.bet}。发牌：${format([card])} -> [${score(hand.cards)}]`
+        return `${player.username} 加倍，注金 ${hand.bet}。发牌：${format([card])} → [${score(hand.cards)}]`
       }
 
       if (!this.canSplit(player)) return this.pvp ? '⚠️ PVP 模式不支持分牌。' : '⚠️ 当前无法分牌。'
-      if (!await this.economy.charge(player.platform, player.userId, hand.bet)) return '💸 余额不足，无法分牌。'
+      if (!await this.economy.charge(player.platform, player.userId, hand.bet)) return '⚠️ 余额不足，无法分牌。'
 
       const [first, second] = hand.cards
       const splitAces = first.rank === 'A'
@@ -288,7 +288,7 @@ export class Game {
       player.hands.push(extra)
 
       this.wait(() => this.advance(), 1)
-      return `🔱 ${player.username} 完成分牌！${splitAces ? '（分 A 只发一张牌）' : ''}`
+      return `✅ ${player.username} 完成分牌。${splitAces ? '（分 A 只发一张牌）' : ''}`
     } finally {
       this.busy = false
     }
@@ -300,7 +300,7 @@ export class Game {
     if (!player || player.hands[0].surrendered) return ''
     player.hands[0].surrendered = true
     player.hands[0].finished = true
-    return `🏳️ ${player.username} 选择投降（保留一半注金）。`
+    return `${player.username} 选择投降（保留一半注金）。`
   }
 
   async insure(userId: string): Promise<string> {
@@ -308,9 +308,9 @@ export class Game {
     const player = this.players.find((item) => item.userId === userId)
     if (!player || player.hands[0].insurance > 0) return ''
     const cost = Math.floor(player.hands[0].bet / 2)
-    if (!await this.economy.charge(player.platform, player.userId, cost)) return '💸 余额不足，买不了保险。'
+    if (!await this.economy.charge(player.platform, player.userId, cost)) return '⚠️ 余额不足，买不了保险。'
     player.hands[0].insurance = cost
-    return `🛡️ ${player.username} 购买了保险（花费 ${cost}）。`
+    return `✅ ${player.username} 购买了保险（花费 ${cost}）。`
   }
 
   // --- 庄家与结算 ---
@@ -320,18 +320,18 @@ export class Game {
     if (this.pvp) return this.settlePvp()
 
     this.phase = Phase.DealerTurn
-    await this.say(`👨‍💼 庄家亮牌：${format(this.dealer)} [${score(this.dealer)}]`)
+    await this.say(`庄家亮牌：${format(this.dealer)} [${score(this.dealer)}]`)
     await sleep(1000)
 
     while (score(this.dealer) < 17 || (this.config.dealerHitSoft17 && isSoft17(this.dealer))) {
       const card = this.draw()
       this.dealer.push(card)
-      await this.say(`👨‍💼 庄家要牌：${format([card])} -> [${score(this.dealer)}]`)
+      await this.say(`庄家要牌：${format([card])} → [${score(this.dealer)}]`)
       await sleep(1500)
     }
 
     const total = score(this.dealer)
-    await this.say(total > 21 ? '💥 庄家爆牌！' : `庄家最终点数：${total}`)
+    await this.say(total > 21 ? '❌ 庄家爆牌。' : `庄家最终点数：${total}`)
     await this.settlePve()
   }
 
@@ -396,7 +396,7 @@ export class Game {
       await this.record(player, profit)
     }
 
-    await this.say(['📊 结算报告', '----------------', ...lines].join('\n'))
+    await this.say(['📋 结算报告', '———————————————', ...lines].join('\n'))
     this.end()
   }
 
@@ -420,7 +420,7 @@ export class Game {
       !player.hands[0].surrendered && score(player.hands[0].cards) <= 21)
 
     if (!alive.length) {
-      lines.push('🤷 全员爆牌或投降，注金由系统收回。')
+      lines.push('⚠️ 全员爆牌或投降，注金由系统收回。')
       for (const player of this.players) {
         if (!player.hands[0].surrendered) await this.record(player, -player.bet)
       }
@@ -444,7 +444,7 @@ export class Game {
       }
     }
 
-    await this.say(['📊 结算报告', '----------------', ...lines].join('\n'))
+    await this.say(['📋 结算报告', '———————————————', ...lines].join('\n'))
     this.end()
   }
 
@@ -475,19 +475,19 @@ export class Game {
   }
 
   table(footer = '') {
-    const lines = ['♠️♣️ Blackjack Table ♥️♦️']
+    const lines = ['🃏 21 点']
     if (!this.pvp && this.dealer.length) {
       const reveal = this.phase === Phase.DealerTurn || this.phase === Phase.Ended
       lines.push(reveal
-        ? `👨‍💼 庄家：${format(this.dealer)} [${score(this.dealer)}]`
-        : `👨‍💼 庄家：${format([this.dealer[0]])}🎴 [?]`, '')
+        ? `庄家：${format(this.dealer)} [${score(this.dealer)}]`
+        : `庄家：${format([this.dealer[0]])} [?]`, '')
     }
     for (const player of this.players) {
       const hands = player.hands.map((hand) => {
         const marks = [hand.surrendered && '🏳️', hand.doubled && '💰', hand.insurance && '🛡️', hand.fromSplit && '🔱']
         return `${format(hand.cards)} [${score(hand.cards)}] ${marks.filter(Boolean).join('')}`.trim()
       })
-      lines.push(`👤 ${player.username}（${player.bet}）：${hands.join(' | ')}`)
+      lines.push(`${player.username}（${player.bet}）：${hands.join(' | ')}`)
     }
     if (footer) lines.push('', footer)
     return lines.join('\n')

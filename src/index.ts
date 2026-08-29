@@ -128,12 +128,12 @@ export function apply(ctx: Context, config: Config) {
   cmd.subcommand('.来一局', '创建一局新游戏')
     .option('nodealer', '-n 无庄家的 PVP 模式')
     .action(async ({ session, options }) => {
-      if (games.has(session.channelId)) return '🚫 当前频道已有对局正在进行。'
+      if (games.has(session.channelId)) return '⚠️ 当前频道已有对局正在进行。'
       const game = new Game(ctx, config, economy, session.bot, session.channelId,
         !!options.nodealer, () => games.delete(session.channelId))
       games.set(session.channelId, game)
       return [
-        `🎰 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
+        `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
         '请发送「下注 100」这样的消息加入游戏（金额自定）。',
         '发送「开始」立即发牌。',
       ].join('\n')
@@ -142,7 +142,7 @@ export function apply(ctx: Context, config: Config) {
   cmd.subcommand('.强制结束', '强制结束当前对局')
     .action(async ({ session }) => {
       const game = games.get(session.channelId)
-      if (!game) return '❓ 当前没有进行中的对局。'
+      if (!game) return '⚠️ 当前没有进行中的对局。'
       await game.refundAll()
       game.end()
       return '✅ 对局已强制结束，注金已退回。'
@@ -152,11 +152,11 @@ export function apply(ctx: Context, config: Config) {
     .action(async ({ session }, target) => {
       const userId = target ? target.split(':')[1] : session.userId
       const [stat] = await ctx.database.get('blackjack_stats', { userId })
-      if (!stat) return '📭 还没有战绩记录。'
+      if (!stat) return '⚠️ 还没有战绩记录。'
       const total = stat.wins + stat.loses + stat.draws
       const rate = total ? (stat.wins / total * 100).toFixed(1) : '0.0'
       return [
-        `📊 ${stat.username} 的战绩`,
+        `📋 ${stat.username} 的战绩`,
         `💰 总盈亏：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit}`,
         `🏆 胜 ${stat.wins} | ❌ 负 ${stat.loses} | 🤝 平 ${stat.draws}`,
         `⚡️ Blackjack：${stat.bjCount} 次`,
@@ -173,9 +173,9 @@ export function apply(ctx: Context, config: Config) {
         .orderBy('totalProfit', 'desc')
         .limit(Math.min(options.limit, 20))
         .execute()
-      if (!rows.length) return '📊 暂时没有排名数据。'
+      if (!rows.length) return '⚠️ 暂时没有排名数据。'
       const medals = ['🥇', '🥈', '🥉']
-      return [`🏆 21 点盈亏排行榜（Top ${rows.length}）`, '----------------',
+      return [`📋 21 点盈亏排行榜（前 ${rows.length}）`, '———————————————',
         ...rows.map((stat, index) =>
           `${medals[index] ?? `${index + 1}.`} ${stat.username}：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit}`),
       ].join('\n')
