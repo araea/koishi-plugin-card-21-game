@@ -1,64 +1,47 @@
 koishi-plugin-card-21-game
-========================
+==========================
 
 [<img alt="github" src="https://img.shields.io/badge/github-araea/card_21_game-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/araea/koishi-plugin-card-21-game)
 [<img alt="npm" src="https://img.shields.io/npm/v/koishi-plugin-card-21-game.svg?style=for-the-badge&color=fc8d62&logo=npm" height="20">](https://www.npmjs.com/package/koishi-plugin-card-21-game)
 
 Koishi 的 21 点（黑杰克）纸牌游戏插件。完整赌场规则。
 
-## 快速开始
+## 使用
 
-启动 `database` 服务；使用 monetary 货币时还需启动 `monetary` 服务（也可在配置里改用 bella 积分）
+1. 启用 `database`。用 monetary 货币时再启用 `monetary`（也可在配置里改用 bella 积分）。
+2. `blackjack.来一局` 开桌。PVP（无庄）加 `-n`。
+3. `下注 100` 或 `bet 100` 入座。
+4. `开始`，或等倒计时。
 
-**发起游戏**
-`blackjack.来一局`
-
-    PVE 模式（默认）    玩家对抗庄家
-    PVP 模式（无庄）    `blackjack.来一局 -n`
-
-**加入游戏**
-`下注 100` 或 `bet 100`
-
-**开始游戏**
-`开始`（或等待倒计时自动开始）
-
-
-## 游戏操作
+## 操作
 
 轮到你时发送：
 
-    要牌        hit     h
-    停牌        stand   s
-    加倍        double  d    首轮可用，注金翻倍，只发一张（PVP 不支持）
-    分牌        split   p    起手对子可用，注金翻倍（PVP 不支持）
-    投降                     开局5秒内，输一半
-    保险                     庄家明牌为A时，保一半
+| 指令 | 别名 | 说明 |
+| --- | --- | --- |
+| 要牌 | `hit` / `h` | |
+| 停牌 | `stand` / `s` | |
+| 加倍 | `double` / `d` | 首轮可用，注金翻倍，只发一张。PVP 不支持 |
+| 分牌 | `split` / `p` | 起手对子可用，注金翻倍。PVP 不支持 |
+| 投降 | | 开局 5 秒内，输一半 |
+| 保险 | | 庄家明牌为 A 时，保一半 |
 
-> PVP 模式按第一手牌比大小，因此不开放会追加注金的加倍与分牌。
+PVP 按第一手牌比大小，因此不开放会追加注金的加倍与分牌。
 
+## 规则
 
-## 规则说明
+目标是手牌接近 21 点但不超过。
 
-**目标**
-手牌点数接近 21 点但不超过
-
-**Blackjack**
-起手 2 张牌即 21 点，赔率 3:2
-分牌后的 21 点不算 Blackjack
-
-**庄家**
-点数 < 17 必须要牌
-点数 ≥ 17 必须停牌
-
-**分 A 特例**
-分 A 后每家只发一张牌
+- **Blackjack**：起手两张即 21 点，赔率 3:2。分牌后的 21 点不算。
+- **庄家**：小于 17 必须要牌，大于等于 17 必须停牌。
+- **分 A**：分完每家只发一张。
 
 ## 致谢
 
 - [Koishi](https://koishi.chat/)
-- [shangxueink](https://github.com/araea/koishi-plugin-message-counter/pull/11) - 上学大人
-- [Wikipedia](https://zh.wikipedia.org/wiki/%E4%BA%8C%E5%8D%81%E4%B8%80%E9%BB%9E) - 游戏规则
-- [WikiHow](https://zh.wikihow.com/%E7%8E%A921%E7%82%B9) - 游戏规则
+- [shangxueink](https://github.com/araea/koishi-plugin-message-counter/pull/11)
+- [Wikipedia](https://zh.wikipedia.org/wiki/%E4%BA%8C%E5%8D%81%E4%B8%80%E9%BB%9E)
+- [WikiHow](https://zh.wikihow.com/%E7%8E%A921%E7%82%B9)
 
 ## QQ 群
 
@@ -69,8 +52,8 @@ Koishi 的 21 点（黑杰克）纸牌游戏插件。完整赌场规则。
 #### License
 
 <sup>
-Licensed under either of <a href="../ds-r-c/LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="../ds-r-c/LICENSE-MIT">MIT license</a> at your option.
+Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
+2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
 </sup>
 
 <br>
