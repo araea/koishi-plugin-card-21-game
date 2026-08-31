@@ -8,28 +8,24 @@ export { Config }
 export const name = 'card-21-game'
 export const inject = { required: ['database'], optional: ['monetary'] }
 
-export const usage = `## 🃏 21 点（Blackjack）
+export const usage = `## 使用
 
-还原真实赌场规则，支持分牌、加倍、保险与投降。
+\`blackjack.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座，\`开始\` 或等倒计时。
 
-### 🎮 快速开始
+## 操作
 
-1. \`blackjack.来一局\` 创建对局（加 \`-n\` 为无庄家的 PVP 模式）。
-2. 发送 \`下注 100\` 或 \`bet 100\` 加入。
-3. 发送 \`开始\` 立即发牌，等待超时也会自动开始。
+| 指令 | 别名 | 说明 |
+| --- | --- | --- |
+| 要牌 | \`hit\` / \`h\` | |
+| 停牌 | \`stand\` / \`s\` | |
+| 加倍 | \`double\` / \`d\` | 首轮，注金翻倍 |
+| 分牌 | \`split\` / \`p\` | 起手对子 |
+| 投降 | | 开局 5 秒内 |
+| 保险 | | 庄家明牌为 A |
 
-### 🕹️ 游戏操作
+## 规则
 
-轮到你时直接发送：\`要牌\` / \`停牌\` / \`加倍\` / \`分牌\`，
-以及阶段性的 \`投降\`（开局前 5 秒）与 \`保险\`（庄家明牌为 A 时）。
-
-### ⚙️ 规则
-
-- Blackjack 赔 3:2，分牌后的 21 点不算 Blackjack。
-- 庄家点数小于 17 必须要牌；软 17 是否要牌可在配置里切换。
-- 分 A 后每手只发一张牌并强制结束。
-- PVP 模式为玩家互相比大小，不支持加倍与分牌。
-`
+接近 21 点但不超过。Blackjack 赔率 3:2。庄家小于 17 必须要牌。`
 
 declare module 'koishi' {
   interface Tables {
