@@ -10,7 +10,7 @@ export const inject = { required: ['database'], optional: ['monetary'] }
 
 export const usage = `## 使用
 
-\`blackjack.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座，\`开始\` 或等倒计时。
+\`bj.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座，\`开始\` 或等倒计时。
 
 ## 操作
 
@@ -107,15 +107,16 @@ export function apply(ctx: Context, config: Config) {
     return next()
   })
 
-  const cmd = ctx.command('blackjack', '21 点纸牌游戏')
+  const cmd = ctx.command('bj', '21 点纸牌游戏')
+    .alias('blackjack')
     .action(() => [
       '🃏 21 点',
       '',
       '指令',
-      '▸ blackjack.来一局 [-n]　创建对局（-n 为 PVP）',
-      '▸ blackjack.强制结束　　结束当前对局并退款',
-      '▸ blackjack.战绩　　　　查询个人战绩',
-      '▸ blackjack.排行 [-l N]　盈亏排行榜',
+      '▸ bj.来一局 [-n]　创建对局（-n 为 PVP）',
+      '▸ bj.强制结束　　结束当前对局并退款',
+      '▸ bj.战绩　　　　查询个人战绩',
+      '▸ bj.排行 [-l N]　盈亏排行榜',
       '',
       '核心规则',
       '▸ Blackjack 赔 3:2，庄家点数小于 17 必须要牌，分 A 只发一张',
@@ -161,7 +162,7 @@ export function apply(ctx: Context, config: Config) {
     })
 
   cmd.subcommand('.排行', '查看盈亏排行榜')
-    .alias('blackjack.rank')
+    .alias('bj.rank')
     .option('limit', '-l <limit:posint> 显示数量', { fallback: 10 })
     .action(async ({ options }) => {
       const rows = await ctx.database
