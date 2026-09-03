@@ -1,4 +1,4 @@
-import { Context } from 'koishi'
+import { Context, Random } from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import { Config } from './config'
 import { createEconomy } from './economy'
@@ -10,7 +10,7 @@ export const inject = { required: ['database'], optional: ['monetary'] }
 
 export const usage = `## 使用
 
-\`bj.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座，\`开始\` 或等倒计时。
+\`bj.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座（不带金额则随机下注），\`开始\` 或等倒计时。
 
 ## 操作
 
@@ -30,6 +30,7 @@ export const usage = `## 使用
 declare module 'koishi' {
   interface Tables {
     blackjack_stats: BlackjackStats
+    blackjack_welfare: BlackjackWelfare
   }
 }
 
@@ -42,6 +43,12 @@ export interface BlackjackStats {
   draws: number
   bjCount: number
   totalProfit: number
+}
+
+/** 每日低保的领取记录，date 为本地日期（YYYY-MM-DD）。 */
+export interface BlackjackWelfare {
+  userId: string
+  date: string
 }
 
 /** 聊天里可以直接发的动作词。 */
@@ -64,6 +71,11 @@ export function apply(ctx: Context, config: Config) {
     totalProfit: 'double',
   }, { primary: 'id', autoInc: true })
 
+  ctx.model.extend('blackjack_welfare', {
+    userId: 'string',
+    date: 'string',
+  }, { primary: 'userId' })
+
   const economy = createEconomy(ctx, config)
   const games = new Map<string, Game>()
 
@@ -85,8 +97,20 @@ export function apply(ctx: Context, config: Config) {
     const reply = async (message: string) => { if (message) await session.send(message) }
 
     if (game.phase === Phase.Joining) {
-      const bet = /^(下注|bet)\s*(\d+)$/.exec(text)
-      if (bet) return reply(await game.join(session.platform, session.userId, username, +bet[2]))
+      const bet = /^(下注|bet)\s*(\S+)?$/.exec(text)
+      if (bet) {
+        const arg = bet[2] ?? ''
+        if (/^\d+$/.test(arg)) return reply(await game.join(session.platform, session.userId, username, +arg))
+        // 没带金额或写岔了：替玩家随机来一注可承受的
+        const balance = await economy.balance(session.platform, session.userId)
+        if (balance < config.minBet) {
+          return reply(`⚠️ 余额不足（当前 ${balance}）。${config.welfareEnabled ? '发送「bj.低保」领取今日东山再起资金。' : ''}`)
+        }
+        const amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
+        const message = await game.join(session.platform, session.userId, username, amount)
+        if (message.startsWith('✅')) return reply(`${message}\n💡 不合心意？发送「下注 N」即可调整。`)
+        return reply(message)
+      }
       if (text === '开始' || text === 'start') return reply(await game.start())
     }
 
@@ -114,6 +138,7 @@ export function apply(ctx: Context, config: Config) {
       '',
       '指令',
       '▸ bj.来一局 [-n]　创建对局（-n 为 PVP）',
+      '▸ bj.低保　　　　每日一次东山再起资金',
       '▸ bj.强制结束　　结束当前对局并退款',
       '▸ bj.战绩　　　　查询个人战绩',
       '▸ bj.排行 [-l N]　盈亏排行榜',
@@ -131,9 +156,25 @@ export function apply(ctx: Context, config: Config) {
       games.set(session.channelId, game)
       return [
         `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
-        '请发送「下注 100」这样的消息加入游戏（金额自定）。',
+        '请发送「下注 100」加入游戏（金额自定，不带金额则随机下注）。',
         '发送「开始」立即发牌。',
       ].join('\n')
+    })
+
+  cmd.subcommand('.低保', '领取每日一次的东山再起资金')
+    .alias('bj.东山再起')
+    .action(async ({ session }) => {
+      if (!config.welfareEnabled) return '⚠️ 低保功能未开启。'
+      const balance = await economy.balance(session.platform, session.userId)
+      if (balance >= config.minBet) {
+        return `💰 你的余额还有 ${balance}，先上桌拼一把，真到了山穷水尽再来找低保。`
+      }
+      const today = new Date().toLocaleDateString('sv')
+      const [record] = await ctx.database.get('blackjack_welfare', { userId: session.userId })
+      if (record?.date === today) return '⚠️ 今天已经领过低保了，明天再来吧。'
+      await ctx.database.upsert('blackjack_welfare', [{ userId: session.userId, date: today }])
+      await economy.payout(session.platform, session.userId, config.welfareAmount)
+      return `💰 低保已到账：${config.welfareAmount}。愿你东山再起，牌运亨通。`
     })
 
   cmd.subcommand('.强制结束', '强制结束当前对局')

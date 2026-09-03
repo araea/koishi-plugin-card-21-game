@@ -8,6 +8,8 @@ export interface Config {
   currency: 'monetary' | 'bella'
   currencyName?: string
   dealerHitSoft17: boolean
+  welfareEnabled: boolean
+  welfareAmount: number
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -18,6 +20,11 @@ export const Config: Schema<Config> = Schema.intersect([
     joinPhaseTimeout: Schema.natural().min(5).default(45).description('加入阶段的等待时间（秒）。'),
     dealerHitSoft17: Schema.boolean().default(false).description('庄家在软 17（含被当作 11 的 A）时是否继续要牌。'),
   }).description('游戏设置'),
+
+  Schema.object({
+    welfareEnabled: Schema.boolean().default(true).description('是否开启每日低保。'),
+    welfareAmount: Schema.natural().min(1).default(200).description('每日低保金额（余额不足最低下注时可领）。'),
+  }).description('低保设置'),
 
   Schema.intersect([
     Schema.object({

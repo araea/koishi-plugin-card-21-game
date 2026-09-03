@@ -106,14 +106,28 @@ export class Game {
 
   // --- 加入阶段 ---
 
+  /** 加入对局；已加入的玩家再次下注视为调整注金（先退旧注，再扣新注）。 */
   async join(platform: string, userId: string, username: string, bet: number): Promise<string> {
     if (this.phase !== Phase.Joining) return '⚠️ 游戏已经开始了。'
-    if (this.players.some((player) => player.userId === userId)) return '⚠️ 你已经加入了。'
     if (bet < this.config.minBet) return `⚠️ 最低下注金额为 ${this.config.minBet}。`
     if (this.busy) return ''
 
     this.busy = true
     try {
+      const existing = this.players.find((player) => player.userId === userId)
+      if (existing) {
+        await this.economy.payout(platform, userId, existing.bet)
+        if (!await this.economy.charge(platform, userId, bet)) {
+          await this.economy.payout(platform, userId, existing.bet)
+          const have = await this.economy.balance(platform, userId)
+          return `⚠️ 余额不足，无法调整为 ${bet}（当前 ${have}），维持原注 ${existing.bet}。`
+        }
+        existing.username = username
+        existing.bet = bet
+        existing.hands = [newHand(bet)]
+        this.wait(() => this.joinTimeout(), this.config.joinPhaseTimeout)
+        return `✅ ${username} 调整下注为 ${bet}。`
+      }
       if (!await this.economy.charge(platform, userId, bet)) {
         const have = await this.economy.balance(platform, userId)
         return `⚠️ 余额不足，无法下注 ${bet}（当前 ${have}）。`
