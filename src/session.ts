@@ -5,6 +5,13 @@ import { createEconomy } from './economy'
 
 export enum Phase { Joining, Dealing, Insurance, Surrender, PlayerTurn, DealerTurn, Ended }
 
+/** 庄家横扫全场的连续局数（氛围播报用，重启归零）。 */
+let dealerSweep = 0
+
+/** 连势播报尾巴：两连胜/连败起才有戏可唱。 */
+const streakMark = (streak: number) =>
+  streak >= 2 ? ` 🔥${streak}连胜` : streak <= -2 ? ` 🥶${-streak}连败` : ''
+
 export interface Hand {
   cards: Card[]
   bet: number
@@ -219,7 +226,7 @@ export class Game {
 
     if (isBlackjack(hand)) {
       hand.finished = true
-      await this.say(`✅ ${player.username} 拿到 Blackjack。`)
+      await this.say(`⚡️ ${player.username} 摸出 Blackjack，天选之牌！`)
       return this.next()
     }
 
@@ -272,7 +279,7 @@ export class Game {
         const total = score(hand.cards)
         if (total >= 21) hand.finished = true
         this.wait(() => this.advance(), 0.5)
-        return `${player.username} 要牌：${format([card])} → [${total}]`
+        return `${player.username} 要牌：${format([card])} → [${total}]${total === 21 ? ' 🎯 恰到好处' : ''}`
       }
 
       if (action === 'double') {
@@ -345,7 +352,7 @@ export class Game {
     }
 
     const total = score(this.dealer)
-    await this.say(total > 21 ? '❌ 庄家爆牌。' : `庄家最终点数：${total}`)
+    await this.say(total > 21 ? `❌ 庄家爆牌（${total}），全场松了口气。` : `庄家最终点数：${total}`)
     await this.settlePve()
   }
 
@@ -354,6 +361,7 @@ export class Game {
     const dealerBj = this.dealer.length === 2 && dealerScore === 21
     const dealerBust = dealerScore > 21
     const lines: string[] = []
+    let swept = true
 
     for (const player of this.players) {
       let profit = 0
@@ -395,7 +403,8 @@ export class Game {
           } else {
             await this.economy.payout(player.platform, player.userId, hand.bet * 2)
             profit += hand.bet
-            marks.push(`🎉胜(+${hand.bet})`)
+            // 差一步险胜，回味最久
+            marks.push(!dealerBust && total - dealerScore <= 1 ? `🥊险胜(+${hand.bet})` : `🎉胜(+${hand.bet})`)
           }
         } else if (!dealerBj && total === dealerScore) {
           await this.economy.payout(player.platform, player.userId, hand.bet)
@@ -406,11 +415,18 @@ export class Game {
         }
       }
 
-      lines.push(`${player.username}：${marks.join(' ')}`)
-      await this.record(player, profit)
+      if (profit >= 0) swept = false
+      lines.push(`${player.username}：${marks.join(' ')}${streakMark(await this.record(player, profit))}`)
     }
 
-    await this.say(['📋 结算报告', '———————————————', ...lines].join('\n'))
+    dealerSweep = swept ? dealerSweep + 1 : 0
+    if (swept) {
+      lines.push(dealerSweep >= 2
+        ? `🏛️ 庄家横扫全场，已连庄 ${dealerSweep} 局，今晚的赌桌格外冷酷。`
+        : '🏛️ 庄家横扫全场。')
+    }
+
+    await this.say([this.table(), '', '📋 结算报告', '———————————————', ...lines].join('\n'))
     this.end()
   }
 
@@ -423,8 +439,7 @@ export class Game {
       if (hand.surrendered) {
         await this.economy.payout(player.platform, player.userId, player.bet / 2)
         pool += player.bet / 2
-        lines.push(`${player.username}：🏳️ 投降`)
-        await this.record(player, -player.bet / 2)
+        lines.push(`${player.username}：🏳️ 投降${streakMark(await this.record(player, -player.bet / 2))}`)
       } else {
         pool += player.bet
       }
@@ -446,26 +461,29 @@ export class Game {
 
       for (const player of this.players) {
         if (winnerIds.has(player.userId) || player.hands[0].surrendered) continue
-        lines.push(`${player.username}：❌ 输（-${player.bet}）`)
-        await this.record(player, -player.bet)
+        lines.push(`${player.username}：❌ 输（-${player.bet}）${streakMark(await this.record(player, -player.bet))}`)
       }
 
       const share = Math.floor(pool / winners.length)
       for (const winner of winners) {
         await this.economy.payout(winner.platform, winner.userId, share)
-        lines.push(`${winner.username}：🏆 赢（+${share - winner.bet}）`)
-        await this.record(winner, share - winner.bet)
+        lines.push(`${winner.username}：🏆 赢（+${share - winner.bet}）${streakMark(await this.record(winner, share - winner.bet))}`)
       }
     }
 
-    await this.say(['📋 结算报告', '———————————————', ...lines].join('\n'))
+    await this.say([this.table(), '', '📋 结算报告', '———————————————', ...lines].join('\n'))
     this.end()
   }
 
-  private async record(player: Player, profit: number) {
+  /** 记录战绩并返回玩家当前连势（正连胜、负连败）。 */
+  private async record(player: Player, profit: number): Promise<number> {
     const rounded = Math.round(profit)
     const [stat] = await this.ctx.database.get('blackjack_stats', { userId: player.userId })
     const blackjacks = player.hands.filter(isBlackjack).length
+    // 平局不断连势；胜负则延续或重开
+    const streak = rounded > 0 ? Math.max(stat?.streak ?? 0, 0) + 1
+      : rounded < 0 ? Math.min(stat?.streak ?? 0, 0) - 1
+      : stat?.streak ?? 0
     if (!stat) {
       await this.ctx.database.create('blackjack_stats', {
         userId: player.userId,
@@ -475,8 +493,9 @@ export class Game {
         draws: rounded === 0 ? 1 : 0,
         bjCount: blackjacks,
         totalProfit: rounded,
+        streak,
       })
-      return
+      return streak
     }
     await this.ctx.database.set('blackjack_stats', { id: stat.id }, {
       username: player.username,
@@ -485,7 +504,9 @@ export class Game {
       draws: stat.draws + (rounded === 0 ? 1 : 0),
       bjCount: stat.bjCount + blackjacks,
       totalProfit: stat.totalProfit + rounded,
+      streak,
     })
+    return streak
   }
 
   table(footer = '') {

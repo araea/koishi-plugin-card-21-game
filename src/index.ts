@@ -43,6 +43,8 @@ export interface BlackjackStats {
   draws: number
   bjCount: number
   totalProfit: number
+  /** 当前连势：正数为连胜，负数为连败，0 无连势。 */
+  streak: number
 }
 
 /** 每日低保的领取记录，date 为本地日期（YYYY-MM-DD）。 */
@@ -69,6 +71,7 @@ export function apply(ctx: Context, config: Config) {
     draws: 'unsigned',
     bjCount: 'unsigned',
     totalProfit: 'double',
+    streak: 'integer',
   }, { primary: 'id', autoInc: true })
 
   ctx.model.extend('blackjack_welfare', {
@@ -216,6 +219,8 @@ export function apply(ctx: Context, config: Config) {
         `🏆 胜 ${stat.wins} | ❌ 负 ${stat.loses} | 🤝 平 ${stat.draws}`,
         `⚡️ Blackjack：${stat.bjCount} 次`,
         `📈 胜率：${rate}%`,
+        ...(stat.streak >= 2 ? [`🔥 当前 ${stat.streak} 连胜`] : []),
+        ...(stat.streak <= -2 ? [`🥶 当前 ${-stat.streak} 连败`] : []),
       ].join('\n')
     })
 
