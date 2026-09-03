@@ -22,8 +22,8 @@ export const Config: Schema<Config> = Schema.intersect([
   }).description('游戏设置'),
 
   Schema.object({
-    welfareEnabled: Schema.boolean().default(true).description('是否开启每日低保。'),
-    welfareAmount: Schema.natural().min(1).default(200).description('每日低保金额（余额不足最低下注时可领）。'),
+    welfareEnabled: Schema.boolean().default(true).description('余额见底时是否自动发放每日低保。'),
+    welfareAmount: Schema.natural().min(1).default(200).description('每日低保金额（下注时余额不足最低下注额则自动发放）。'),
   }).description('低保设置'),
 
   Schema.intersect([

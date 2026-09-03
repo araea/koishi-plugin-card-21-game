@@ -1,4 +1,4 @@
-import { Context, Random } from 'koishi'
+import { Context, Random, Session } from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import { Config } from './config'
 import { createEconomy } from './economy'
@@ -10,7 +10,7 @@ export const inject = { required: ['database'], optional: ['monetary'] }
 
 export const usage = `## 使用
 
-\`bj.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座（不带金额则随机下注），\`开始\` 或等倒计时。
+\`bj.来一局\` 开桌，PVP 加 \`-n\`。\`下注 100\` 入座（注额可省，由系统随机定夺；余额见底时每日自动发放一次东山再起资金），\`开始\` 或等倒计时。
 
 ## 操作
 
@@ -79,6 +79,49 @@ export function apply(ctx: Context, config: Config) {
   const economy = createEconomy(ctx, config)
   const games = new Map<string, Game>()
 
+  /** 山穷水尽（余额不足起注）时自动发放当日低保，返回发放金额；不可领返回 0。 */
+  async function claimWelfare(platform: string, userId: string, balance: number) {
+    if (!config.welfareEnabled || balance >= config.minBet) return 0
+    const today = new Date().toLocaleDateString('sv')
+    const [record] = await ctx.database.get('blackjack_welfare', { userId })
+    if (record?.date === today) return 0
+    await ctx.database.upsert('blackjack_welfare', [{ userId, date: today }])
+    await economy.payout(platform, userId, config.welfareAmount)
+    return config.welfareAmount
+  }
+
+  /**
+   * 下注入口：注额缺省、写岔或超出承受力时替玩家随机一注可承受的；
+   * 余额见底则先自动领当日低保——一条消息就能坐上牌桌。
+   */
+  async function autoJoin(game: Game, session: Session, username: string, requested: number | null) {
+    const { platform, userId } = session
+    let balance = await economy.balance(platform, userId)
+    const lines: string[] = []
+
+    const welfare = await claimWelfare(platform, userId, balance)
+    if (welfare) {
+      balance += welfare
+      lines.push(`💰 余额见底，已自动发放今日低保 ${welfare}，愿你东山再起。`)
+    }
+
+    let amount = requested
+    if (amount === null || amount > balance) {
+      if (balance < config.minBet) {
+        lines.push(`⚠️ 余额不足（当前 ${balance}），今天先歇一歇吧。`)
+        return lines.join('\n')
+      }
+      amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
+      lines.push(`🎲 已为你随机定注 ${amount}`)
+    }
+
+    lines.push(await game.join(platform, userId, username, amount))
+    if (requested === null || requested > balance) {
+      lines.push('💡 不合心意？发送「下注 N」即可调整。')
+    }
+    return lines.join('\n')
+  }
+
   ctx.on('dispose', () => {
     for (const game of games.values()) {
       game.refundAll().catch(() => {})
@@ -100,16 +143,7 @@ export function apply(ctx: Context, config: Config) {
       const bet = /^(下注|bet)\s*(\S+)?$/.exec(text)
       if (bet) {
         const arg = bet[2] ?? ''
-        if (/^\d+$/.test(arg)) return reply(await game.join(session.platform, session.userId, username, +arg))
-        // 没带金额或写岔了：替玩家随机来一注可承受的
-        const balance = await economy.balance(session.platform, session.userId)
-        if (balance < config.minBet) {
-          return reply(`⚠️ 余额不足（当前 ${balance}）。${config.welfareEnabled ? '发送「bj.低保」领取今日东山再起资金。' : ''}`)
-        }
-        const amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
-        const message = await game.join(session.platform, session.userId, username, amount)
-        if (message.startsWith('✅')) return reply(`${message}\n💡 不合心意？发送「下注 N」即可调整。`)
-        return reply(message)
+        return reply(await autoJoin(game, session, username, /^\d+$/.test(arg) ? +arg : null))
       }
       if (text === '开始' || text === 'start') return reply(await game.start())
     }
@@ -138,7 +172,6 @@ export function apply(ctx: Context, config: Config) {
       '',
       '指令',
       '▸ bj.来一局 [-n]　创建对局（-n 为 PVP）',
-      '▸ bj.低保　　　　每日一次东山再起资金',
       '▸ bj.强制结束　　结束当前对局并退款',
       '▸ bj.战绩　　　　查询个人战绩',
       '▸ bj.排行 [-l N]　盈亏排行榜',
@@ -156,25 +189,9 @@ export function apply(ctx: Context, config: Config) {
       games.set(session.channelId, game)
       return [
         `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
-        '请发送「下注 100」加入游戏（金额自定，不带金额则随机下注）。',
+        '请发送「下注 100」加入游戏（注额可省，由系统定夺）。',
         '发送「开始」立即发牌。',
       ].join('\n')
-    })
-
-  cmd.subcommand('.低保', '领取每日一次的东山再起资金')
-    .alias('bj.东山再起')
-    .action(async ({ session }) => {
-      if (!config.welfareEnabled) return '⚠️ 低保功能未开启。'
-      const balance = await economy.balance(session.platform, session.userId)
-      if (balance >= config.minBet) {
-        return `💰 你的余额还有 ${balance}，先上桌拼一把，真到了山穷水尽再来找低保。`
-      }
-      const today = new Date().toLocaleDateString('sv')
-      const [record] = await ctx.database.get('blackjack_welfare', { userId: session.userId })
-      if (record?.date === today) return '⚠️ 今天已经领过低保了，明天再来吧。'
-      await ctx.database.upsert('blackjack_welfare', [{ userId: session.userId, date: today }])
-      await economy.payout(session.platform, session.userId, config.welfareAmount)
-      return `💰 低保已到账：${config.welfareAmount}。愿你东山再起，牌运亨通。`
     })
 
   cmd.subcommand('.强制结束', '强制结束当前对局')
