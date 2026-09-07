@@ -1,47 +1,32 @@
-koishi-plugin-card-21-game
-==========================
+# koishi-plugin-card-21-game
 
-[<img alt="github" src="https://img.shields.io/badge/github-araea/koishi__plugin__card__21__game-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/araea/koishi-plugin-card-21-game)
-[<img alt="npm" src="https://img.shields.io/npm/v/koishi-plugin-card-21-game.svg?style=for-the-badge&color=fc8d62&logo=npm" height="20">](https://www.npmjs.com/package/koishi-plugin-card-21-game)
+21 点纸牌游戏插件。
 
-Koishi 的 21 点纸牌游戏插件。
+## 安装
+
+~~~sh
+yarn add koishi-plugin-card-21-game
+~~~
+
+在 Koishi 配置中启用 koishi-plugin-card-21-game，并提供 database 服务。金币模式需要 monetary 服务。
 
 ## 使用
 
-`bj.来一局` 开桌，PVP 加 `-n`。`下注 100` 入座（注额可省，由系统随机定夺，不合心意可重新 `下注 N` 调整），`开始` 或等倒计时。余额见底时无需任何操作，下注即自动获得每日一次的东山再起资金。
+发送 bj.来一局 开桌；发送 bj.来一局 -n 可启用 PVP。发送 下注 100 入座，
+再发送 开始 或等待倒计时。
 
-## 操作
-
-| 指令 | 别名 | 说明 |
+| 操作 | 别名 | 说明 |
 | --- | --- | --- |
-| 要牌 | `hit` / `h` | |
-| 停牌 | `stand` / `s` | |
-| 加倍 | `double` / `d` | 首轮，注金翻倍 |
-| 分牌 | `split` / `p` | 起手对子 |
-| 投降 | | 开局 5 秒内 |
-| 保险 | | 庄家明牌为 A |
+| 要牌 | hit / h | |
+| 停牌 | stand / s | |
+| 加倍 | double / d | 首轮将注金翻倍 |
+| 分牌 | split / p | 起手对子可用 |
+| 投降 | | 开局 5 秒内可用 |
+| 保险 | | 庄家明牌为 A 时可用 |
 
-## 规则
+点数不超过 21 且尽量接近 21。Blackjack 赔率为 3:2，庄家点数小于 17 时必须要牌。
+余额用尽时，下注可自动领取每日一次的东山再起资金。
 
-接近 21 点但不超过。Blackjack 赔率 3:2。庄家小于 17 必须要牌。
+## 许可证
 
-## QQ 群
-
-956758505
-
-<br>
-
-#### License
-
-<sup>
-Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
-</sup>
-
-<br>
-
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
-</sub>
+可按 [Apache-2.0](LICENSE-APACHE) 或 [MIT](LICENSE-MIT) 使用。
