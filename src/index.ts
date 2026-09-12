@@ -10,7 +10,7 @@ export const inject = { required: ['database'], optional: ['monetary'] }
 
 export const usage = `## 使用
 
-发送 \`bj.来一局\` 开桌，加 \`-n\` 启用 PVP。发送 \`下注 100\` 入座，注额可以省略，由系统随机决定；余额用尽时自动领取每日一次的东山再起资金。再发送 \`开始\` 或等待倒计时。
+发送 \`bj.来一局\` 开桌，加 \`-n\` 启用 PVP。发送 \`下注\` 入座，注额由系统按余额随机安排；余额用尽时自动领取每日一次的东山再起资金。再发送 \`开始\` 或等待倒计时。
 
 ## 操作
 
@@ -102,11 +102,14 @@ export function apply(ctx: Context, config: Config) {
   }
 
   /**
-   * 下注入口：注额缺省、写岔或超出承受力时替玩家随机一注可承受的；
+   * 下注入口：注额由系统按余额随机安排，玩家无需操心；
    * 余额见底则先自动领当日低保——一条消息就能坐上牌桌。
    */
-  async function autoJoin(game: Game, session: Session, username: string, requested: number | null) {
+  async function autoJoin(game: Game, session: Session, username: string) {
     const { platform, userId } = session
+    const seated = game.seated(userId)
+    if (seated !== null) return `ℹ️ ${username} 已在牌桌上（注 ${seated}），等待开局。`
+
     let balance = await economy.balance(platform, userId)
     const lines: string[] = []
 
@@ -116,20 +119,14 @@ export function apply(ctx: Context, config: Config) {
       lines.push(`💰 余额见底，已自动发放今日低保 ${welfare}，愿你东山再起。`)
     }
 
-    let amount = requested
-    if (amount === null || amount > balance) {
-      if (balance < config.minBet) {
-        lines.push(`⚠️ 余额不足（当前 ${balance}），今天先歇一歇吧。`)
-        return lines.join('\n')
-      }
-      amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
-      lines.push(`🎲 已为你随机定注 ${amount}`)
+    if (balance < config.minBet) {
+      lines.push(`⚠️ 余额不足（当前 ${balance}），今天先歇一歇吧。`)
+      return lines.join('\n')
     }
 
+    const amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
+    lines.push(`🎲 已为你定注 ${amount}`)
     lines.push(await game.join(platform, userId, username, amount))
-    if (requested === null || requested > balance) {
-      lines.push('💡 不合心意？发送「下注 N」即可调整。')
-    }
     return lines.join('\n')
   }
 
@@ -151,11 +148,8 @@ export function apply(ctx: Context, config: Config) {
     const reply = async (message: string) => { if (message) await session.send(message) }
 
     if (game.phase === Phase.Joining) {
-      const bet = /^(下注|bet)\s*(\S+)?$/.exec(text)
-      if (bet) {
-        const arg = bet[2] ?? ''
-        return reply(await autoJoin(game, session, username, /^\d+$/.test(arg) ? +arg : null))
-      }
+      // 注额由系统随机安排，玩家若写上数字也一律忽略
+      if (/^(下注|bet)(\s*\d+)?$/.test(text)) return reply(await autoJoin(game, session, username))
       if (text === '开始' || text === 'start') return reply(await game.start())
     }
 
@@ -200,7 +194,7 @@ export function apply(ctx: Context, config: Config) {
       games.set(session.channelId, game)
       return [
         `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
-        '请发送「下注 100」加入游戏（注额可省，由系统定夺）。',
+        '请发送「下注」加入游戏，注额由系统随机安排。',
         '发送「开始」立即发牌。',
       ].join('\n')
     })
