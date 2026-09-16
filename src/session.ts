@@ -54,6 +54,8 @@ export class Game {
   turn = 0
   /** 逐条动作串行处理，避免连点把同一手牌算两次。 */
   private busy = false
+  /** 已退款或已结算，防止结算路径与 .结束 各赔一次。 */
+  private settled = false
   private dispose: () => void = null
 
   constructor(
@@ -63,6 +65,8 @@ export class Game {
     private bot: Bot,
     public channelId: string,
     public pvp: boolean,
+    /** 发起这一局的人；结束他人对局要卡在这里。 */
+    public initiator: string,
     private onEnd: () => void,
   ) {
     this.wait(() => this.joinTimeout(), config.joinPhaseTimeout)
@@ -71,6 +75,7 @@ export class Game {
   // --- 基础设施 ---
 
   private wait(callback: () => Promise<void> | void, seconds: number) {
+    if (this.phase === Phase.Ended) return
     this.clear()
     this.dispose = this.ctx.setTimeout(async () => {
       this.dispose = null
@@ -81,6 +86,11 @@ export class Game {
   private clear() {
     this.dispose?.()
     this.dispose = null
+  }
+
+  /** 等待期间可能已被 .结束 收掉；用取值器读，避免被类型收窄误判。 */
+  private get isEnded() {
+    return this.phase === Phase.Ended
   }
 
   async say(message: string) {
@@ -104,6 +114,8 @@ export class Game {
   }
 
   async refundAll() {
+    if (this.settled) return
+    this.settled = true
     for (const player of this.players) {
       // 加倍与分牌都会追加下注，退款要按每手实际注金算
       const staked = player.hands.reduce((sum, hand) => sum + hand.bet + hand.insurance, 0)
@@ -121,7 +133,7 @@ export class Game {
   /** 加入对局；注额由上层随机定夺，这里只管扣款入座。 */
   async join(platform: string, userId: string, username: string, bet: number): Promise<string> {
     if (this.phase !== Phase.Joining) return '💡 这一局已经开始了，下一局再入座。'
-    if (this.busy) return ''
+    if (this.busy) return '⏳ 正在处理上一位入座，稍后再发。'
 
     this.busy = true
     try {
@@ -135,7 +147,7 @@ export class Game {
     }
 
     this.wait(() => this.joinTimeout(), this.config.joinPhaseTimeout)
-    return `✅ ${username} 加入成功（下注 ${bet}）。当前玩家：${this.players.length} 人。`
+    return `✅ ${username} 加入成功（下注 ${bet}）。当前 ${this.players.length} 人。`
   }
 
   private async joinTimeout() {
@@ -144,7 +156,7 @@ export class Game {
       return this.end()
     }
     if (this.pvp && this.players.length < 2) {
-      await this.say('💡 PVP 至少需要 2 人，这一局作罢，注金已退还。')
+      await this.say('💡 人数不够，这一局作罢\nPVP 至少需要 2 人，注金已退还。\n再等一位，或发送「bj.来一局」不带 -n 开一桌 PVE。')
       await this.refundAll()
       return this.end()
     }
@@ -167,11 +179,11 @@ export class Game {
       if (!round) await sleep(500)
     }
 
-    await this.say(this.table('✅ 游戏开始，发牌完毕。'))
+    await this.say(this.table('✅ 对局开始，发牌完毕。'))
 
     if (!this.pvp && this.dealer[0]?.rank === 'A') {
       this.phase = Phase.Insurance
-      await this.say('💡 庄家明牌为 A，要买保险吗\n发送「保险」买入，或发送「跳过」。')
+      await this.say('💡 庄家明牌为 A，要买保险吗\n发送「保险」买入，或发送「跳过」。\n10 秒后进入投降阶段。')
       this.wait(() => this.surrenderPhase(), 10)
       return ''
     }
@@ -232,7 +244,7 @@ export class Game {
     if (this.canSplit(player)) actions.push('分牌')
 
     const which = player.hands.length > 1 ? `（手牌 ${player.handIndex + 1}/${player.hands.length}）` : ''
-    await this.say(`⏳ 轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n可发送：${actions.join(' · ')}`)
+    await this.say(`⏳ 轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n可发送：${actions.join(' · ')}。${this.config.playerTurnTimeout} 秒内不动作将自动停牌。`)
 
     this.wait(async () => {
       await this.say(`⏳ ${player.username} 操作超时，自动停牌。`)
@@ -250,7 +262,8 @@ export class Game {
 
   /** 玩家回合内的四个动作。 */
   async hit(userId: string, action: 'hit' | 'stand' | 'double' | 'split'): Promise<string> {
-    if (this.phase !== Phase.PlayerTurn || this.busy) return ''
+    if (this.phase !== Phase.PlayerTurn) return ''
+    if (this.busy) return '⏳ 上一手还在处理，稍后再发。'
     const seat = this.current()
     if (!seat || seat.player.userId !== userId) return ''
     const { player, hand } = seat
@@ -333,12 +346,25 @@ export class Game {
     this.phase = Phase.DealerTurn
     await this.say(`庄家亮牌：${format(this.dealer)} [${score(this.dealer)}]`)
     await sleep(1000)
+    if (this.isEnded) return
+
+    // 快速模式：庄家的牌一次抽完，不逐张揭示
+    if (this.config.quickMode) {
+      while (score(this.dealer) < 17 || (this.config.dealerHitSoft17 && isSoft17(this.dealer))) {
+        this.dealer.push(this.draw())
+      }
+      const quick = score(this.dealer)
+      await this.say(quick > 21 ? `💥 庄家爆牌（${quick}），全场松了口气。` : `庄家最终点数：${quick}`)
+      await this.settlePve()
+      return
+    }
 
     while (score(this.dealer) < 17 || (this.config.dealerHitSoft17 && isSoft17(this.dealer))) {
       const card = this.draw()
       this.dealer.push(card)
       await this.say(`庄家要牌：${format([card])} → [${score(this.dealer)}]`)
       await sleep(1500)
+      if (this.isEnded) return
     }
 
     const total = score(this.dealer)
@@ -347,6 +373,8 @@ export class Game {
   }
 
   private async settlePve() {
+    if (this.settled) return
+    this.settled = true
     const dealerScore = score(this.dealer)
     const dealerBj = this.dealer.length === 2 && dealerScore === 21
     const dealerBust = dealerScore > 21
@@ -412,8 +440,8 @@ export class Game {
     dealerSweep = swept ? dealerSweep + 1 : 0
     if (swept) {
       lines.push(dealerSweep >= 2
-        ? `🏛️ 庄家横扫全场，已连庄 ${dealerSweep} 局，今晚的赌桌格外冷酷。`
-        : '🏛️ 庄家横扫全场。')
+        ? `庄家横扫全场 🏛️ 已连庄 ${dealerSweep} 局，今晚的赌桌格外冷酷。`
+        : '庄家横扫全场 🏛️')
     }
 
     await this.say([this.table(), '', '📋 结算报告', ...lines].join('\n'))
@@ -421,6 +449,8 @@ export class Game {
   }
 
   private async settlePvp() {
+    if (this.settled) return
+    this.settled = true
     const lines: string[] = []
     let pool = 0
 

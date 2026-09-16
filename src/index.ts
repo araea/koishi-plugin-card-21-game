@@ -12,24 +12,27 @@ export const usage = `## 使用
 
 发送 \`bj.来一局\` 开桌，加 \`-n\` 启用 PVP。发送 \`下注\` 入座，注额由系统按余额随机安排；余额用尽时自动领取每日一次的东山再起资金。再发送 \`开始\` 或等待倒计时。
 
-## 操作
-
-| 指令 | 别名 | 说明 |
-| --- | --- | --- |
-| 要牌 | \`hit\` / \`h\` | |
-| 停牌 | \`stand\` / \`s\` | |
-| 加倍 | \`double\` / \`d\` | 首轮将注金翻倍 |
-| 分牌 | \`split\` / \`p\` | 起手对子可用 |
-| 投降 | | 开局 5 秒内可用 |
-| 保险 | | 庄家明牌为 A 时可用 |
-
-## 对局管理
+## 指令
 
 | 指令 | 说明 |
 | --- | --- |
+| \`bj.来一局\` | 开一桌新对局，加 \`-n\` 启用 PVP |
 | \`bj.战绩 [@某人]\` | 查询战绩 |
 | \`bj.排行榜\` | 查看盈亏排行榜 |
-| \`bj.结束\` | 结束当前对局并退款 |
+| \`bj.结束\` | 结束当前对局并退款，发起者或权限 2 |
+
+对局中的动作写成 \`bj.动作\`，也接受裸词（无需指令前缀）：
+
+| 动作 | 裸词 | 说明 |
+| --- | --- | --- |
+| \`bj.下注\` | \`下注\` | 入座，注额由系统按余额随机安排 |
+| \`bj.开始\` | \`开始\` | 发牌并进入下一阶段 |
+| \`bj.要牌\` | \`要牌\` / \`h\` | |
+| \`bj.停牌\` | \`停牌\` / \`s\` | |
+| \`bj.加倍\` | \`加倍\` / \`d\` | 首轮将注金翻倍 |
+| \`bj.分牌\` | \`分牌\` / \`p\` | 起手对子可用 |
+| \`bj.投降\` | \`投降\` | 开局 5 秒内可用 |
+| \`bj.保险\` | \`保险\` | 庄家明牌为 A 时可用 |
 
 ## 规则
 
@@ -61,13 +64,34 @@ export interface BlackjackWelfare {
   date: string
 }
 
-/** 聊天里可以直接发的动作词。 */
-const ACTIONS = {
+/** 一局里能做的动作。 */
+type Action = 'join' | 'start' | 'insure' | 'skip' | 'surrender' | 'hit' | 'stand' | 'double' | 'split'
+
+/** 聊天里可以直接发的动作词，与 bj.* 子指令一一对应。 */
+const BARE_ACTIONS: Record<string, Action> = {
+  下注: 'join', bet: 'join',
+  开始: 'start', start: 'start', continue: 'start', 继续: 'start',
+  保险: 'insure', insure: 'insure', yes: 'insure',
+  跳过: 'skip', skip: 'skip', no: 'skip',
+  投降: 'surrender', surrender: 'surrender',
   要牌: 'hit', hit: 'hit', h: 'hit',
   停牌: 'stand', stand: 'stand', s: 'stand',
   加倍: 'double', double: 'double', d: 'double',
   分牌: 'split', split: 'split', p: 'split',
-} as const
+}
+
+/** bj.* 子指令：完整入口，关掉裸词后仍然打得出。 */
+const ACTION_COMMANDS: Array<[string, string, Action, string]> = [
+  ['.下注', '.bet', 'join', '下注入座'],
+  ['.开始', '.start', 'start', '发牌并进入下一阶段'],
+  ['.保险', '.insure', 'insure', '购买保险'],
+  ['.跳过', '.skip', 'skip', '跳过保险'],
+  ['.投降', '.surrender', 'surrender', '投降认输'],
+  ['.要牌', '.hit', 'hit', '要一张牌'],
+  ['.停牌', '.stand', 'stand', '停牌'],
+  ['.加倍', '.double', 'double', '将注金翻倍'],
+  ['.分牌', '.split', 'split', '分开两手牌'],
+]
 
 export function apply(ctx: Context, config: Config) {
   ctx.model.extend('blackjack_stats', {
@@ -108,7 +132,7 @@ export function apply(ctx: Context, config: Config) {
   async function autoJoin(game: Game, session: Session, username: string) {
     const { platform, userId } = session
     const seated = game.seated(userId)
-    if (seated !== null) return `💡 ${username} 已在牌桌上，注 ${seated}。\n发送「开始」立即发牌。`
+    if (seated !== null) return `💡 ${username} 已在牌桌上，注 ${seated}\n发送「开始」立即发牌。`
 
     let balance = await economy.balance(platform, userId)
     const lines: string[] = []
@@ -116,16 +140,17 @@ export function apply(ctx: Context, config: Config) {
     const welfare = await claimWelfare(platform, userId, balance)
     if (welfare) {
       balance += welfare
-      lines.push(`💰 余额见底，已自动发放今日低保 ${welfare}，愿你东山再起。`)
+      lines.push(`💡 余额见底\n已自动发放今日低保 ${welfare}，愿你东山再起。`)
     }
 
     if (balance < config.minBet) {
-      lines.push(`⚠️ 余额不足，当前 ${balance}。今天先歇一歇。`)
+      lines.push(`⚠️ 余额不足，当前 ${balance}`)
+      lines.push(config.welfareEnabled ? '今日低保已领过，跨零点后重置。' : '余额见底，先攒一点再来。')
+      lines.push('发送「bj.战绩」看看战绩。')
       return lines.join('\n')
     }
 
     const amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
-    lines.push(`🎲 已为你定注 ${amount}`)
     lines.push(await game.join(platform, userId, username, amount))
     return lines.join('\n')
   }
@@ -138,75 +163,96 @@ export function apply(ctx: Context, config: Config) {
     games.clear()
   })
 
+  /**
+   * 动作的唯一实现：裸词中间件与 bj.* 子指令都走这里。
+   * 返回空串表示这次不适用，调用方据此交还给下一个中间件。
+   */
+  async function act(session: Session, action: Action): Promise<string> {
+    const game = games.get(session.channelId)
+    if (!game || game.phase === Phase.Ended) return ''
+
+    if (action === 'join') {
+      // 注额由系统按余额随机安排
+      return game.phase === Phase.Joining ? autoJoin(game, session, session.username || session.userId) : ''
+    }
+    if (action === 'start') {
+      if (game.phase === Phase.Joining) return game.start()
+      if (game.phase === Phase.Surrender) game.playerTurns()
+      return ''
+    }
+    if (action === 'insure') {
+      return game.phase === Phase.Insurance ? game.insure(session.userId) : ''
+    }
+    if (action === 'skip') {
+      // 跳过保险只是不作声，等窗口到时自己往下走
+      return ''
+    }
+    if (action === 'surrender') {
+      return game.phase === Phase.Surrender ? game.surrender(session.userId) : ''
+    }
+    return game.phase === Phase.PlayerTurn ? game.hit(session.userId, action) : ''
+  }
+
   // 对局中的频道才解析这些裸指令；其余频道只做一次 Map 查询
   ctx.middleware(async (session, next) => {
+    if (!config.enableDirectInput) return next()
     const game = games.get(session.channelId)
     if (!game || game.phase === Phase.Ended) return next()
 
-    const text = session.content.trim().toLowerCase()
-    const username = session.username || session.userId
-    const reply = async (message: string) => { if (message) await session.send(message) }
+    // 下注允许带上金额，金额本身由系统安排，这里只看形状
+    const raw = session.content.trim().toLowerCase()
+    const text = /^(下注|bet)(\s*\d+)?$/.test(raw) ? '下注' : raw
+    const action = BARE_ACTIONS[text]
+    if (!action) return next()
 
-    if (game.phase === Phase.Joining) {
-      // 注额由系统随机安排，玩家若写上数字也一律忽略
-      if (/^(下注|bet)(\s*\d+)?$/.test(text)) return reply(await autoJoin(game, session, username))
-      if (text === '开始' || text === 'start') return reply(await game.start())
-    }
-
-    if (game.phase === Phase.Insurance) {
-      if (['保险', 'yes', 'insure'].includes(text)) return reply(await game.insure(session.userId))
-      if (['跳过', 'no', 'skip'].includes(text)) return
-    }
-
-    if (game.phase === Phase.Surrender) {
-      if (['投降', 'surrender'].includes(text)) return reply(await game.surrender(session.userId))
-      if (['开始', '继续', 'start'].includes(text)) return game.playerTurns()
-    }
-
-    if (game.phase === Phase.PlayerTurn && ACTIONS[text]) {
-      return reply(await game.hit(session.userId, ACTIONS[text]))
-    }
-
-    return next()
+    const reply = await act(session, action)
+    // 没处理就交出去，不把别人的消息吞掉
+    if (!reply) return next()
+    await session.send(reply)
   })
 
   const cmd = ctx.command('bj', '21 点纸牌游戏')
     .alias('blackjack')
-    .action(() => [
-      '🃏 21 点',
-      '',
-      '指令',
-      '• bj.来一局 [-n]　开一桌（-n 为 PVP）',
-      '• bj.结束　　　　结束当前对局并退款',
-      '• bj.战绩　　　　查询个人战绩',
-      '• bj.排行榜 [-l N]　盈亏排行榜',
-      '',
-      '核心规则',
-      '• Blackjack 赔 3:2，庄家点数小于 17 必须要牌，分 A 只发一张',
-    ].join('\n'))
+    .action(({ session }) => session.execute('help bj'))
 
   cmd.subcommand('.来一局', '开一桌新对局')
     .option('nodealer', '-n 无庄家的 PVP 模式')
     .action(async ({ session, options }) => {
       if (games.has(session.channelId)) return '⚠️ 本频道已有对局正在进行\n发送「bj.结束」结束它，再开新的。'
       const game = new Game(ctx, config, economy, session.bot, session.channelId,
-        !!options.nodealer, () => games.delete(session.channelId))
+        !!options.nodealer, session.userId, () => games.delete(session.channelId))
       games.set(session.channelId, game)
       return [
         `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
-        '发送「下注」入座，注额由系统按余额随机安排。',
+        `发送「下注」入座，注额由系统按余额随机安排。${config.joinPhaseTimeout} 秒后自动开始。`,
         '发送「开始」立即发牌。',
       ].join('\n')
     })
 
   cmd.subcommand('.结束', '结束当前对局并退款')
+    .userFields(['id', 'name', 'authority'])
     .action(async ({ session }) => {
       const game = games.get(session.channelId)
       if (!game) return '💡 本频道没有进行中的对局。\n发送「bj.来一局」开一桌。'
+      if (game.phase === Phase.DealerTurn) return '⏳ 正在结算\n等这局收完再结束。'
+      const authority = session.user?.authority ?? 0
+      if (session.userId !== game.initiator && authority < 2) {
+        return '⚠️ 权限不够\n只有发起者或权限 2 以上的人能结束这一局。'
+      }
       await game.refundAll()
       game.end()
       return '✅ 对局已结束，注金已退回。'
     })
+
+  // 动作的完整入口：关掉 enableDirectInput 之后靠这些指令打完一局
+  for (const [name, alias, action, description] of ACTION_COMMANDS) {
+    cmd.subcommand(name, description)
+      .alias(alias)
+      .action(async ({ session }) => {
+        const reply = await act(session, action)
+        return reply || '💡 现在不是这个动作的时候\n发送「bj.战绩」看战绩，或等下一次机会。'
+      })
+  }
 
   cmd.subcommand('.战绩 [target:user]', '查询战绩')
     .action(async ({ session }, target) => {
@@ -217,23 +263,19 @@ export function apply(ctx: Context, config: Config) {
       const rate = total ? (stat.wins / total * 100).toFixed(1) : '0.0'
       return [
         `📋 ${stat.username} 的战绩`,
-        `💰 总盈亏：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit}`,
-        `🏆 胜 ${stat.wins} | ❌ 负 ${stat.loses} | 🤝 平 ${stat.draws}`,
-        `⚡️ Blackjack：${stat.bjCount} 次`,
-        `📈 胜率：${rate}%`,
-        ...(stat.streak >= 2 ? [`🔥 当前 ${stat.streak} 连胜`] : []),
-        ...(stat.streak <= -2 ? [`🥶 当前 ${-stat.streak} 连败`] : []),
+        `总盈亏：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit} 💰`,
+        `胜 ${stat.wins} · 负 ${stat.loses} · 平 ${stat.draws} 🤝`,
+        `Blackjack ${stat.bjCount} 次`,
+        `胜率 ${rate}%${stat.streak >= 2 ? ` · 当前 ${stat.streak} 连胜` : ''}${stat.streak <= -2 ? ` · 当前 ${-stat.streak} 连败` : ''}`,
       ].join('\n')
     })
 
-  cmd.subcommand('.排行榜', '查看盈亏排行榜')
-    .alias('bj.rank')
-    .option('limit', '-l <limit:posint> 显示数量', { fallback: 10 })
-    .action(async ({ options }) => {
+  cmd.subcommand('.排行榜 [count:posint]', '查看盈亏排行榜')
+    .action(async ({ session }, count = 10) => {
       const rows = await ctx.database
         .select('blackjack_stats')
         .orderBy('totalProfit', 'desc')
-        .limit(Math.min(options.limit, 20))
+        .limit(Math.min(count, 20))
         .execute()
       if (!rows.length) return '📋 排行榜还空着\n第一个坐上牌桌的人，名字会写在这里。\n发送「bj.来一局」开一桌。'
       const medals = ['🥇', '🥈', '🥉']

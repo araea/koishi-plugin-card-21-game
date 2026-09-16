@@ -10,6 +10,8 @@ export interface Config {
   dealerHitSoft17: boolean
   welfareEnabled: boolean
   welfareAmount: number
+  enableDirectInput: boolean
+  quickMode: boolean
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -19,6 +21,10 @@ export const Config: Schema<Config> = Schema.intersect([
     playerTurnTimeout: Schema.natural().min(5).default(30).description('玩家操作超时（秒），超时自动停牌。'),
     joinPhaseTimeout: Schema.natural().min(5).default(45).description('加入阶段的等待时间（秒）。'),
     dealerHitSoft17: Schema.boolean().default(false).description('庄家在软 17（含被当作 11 的 A）时是否继续要牌。'),
+    enableDirectInput: Schema.boolean().default(true)
+      .description('对局中直接发送「下注」「要牌」等动作即可，无需指令前缀。'),
+    quickMode: Schema.boolean().default(false)
+      .description('快速模式：庄家的牌一次说完，不逐张揭示。'),
   }).description('游戏设置'),
 
   Schema.object({
