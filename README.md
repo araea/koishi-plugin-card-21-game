@@ -1,6 +1,6 @@
 # koishi-plugin-card-21-game
 
-21 点纸牌游戏
+21 点 · 完整赌场规则，支持 PVE 与 PVP
 
 ## 安装
 
