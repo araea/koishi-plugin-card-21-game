@@ -152,7 +152,7 @@ export class Game {
 
   private async joinTimeout() {
     if (!this.players.length) {
-      await this.say('💡 无人入座，这一局作罢。\n发送「bj.来一局」再开一桌。')
+      await this.say('💡 无人入座，这一局作罢\n发送「bj.来一局」再开一桌。')
       return this.end()
     }
     if (this.pvp && this.players.length < 2) {
@@ -193,7 +193,7 @@ export class Game {
 
   private async surrenderPhase() {
     this.phase = Phase.Surrender
-    await this.say('💡 投降阶段 · 牌型不佳可发送「投降」，只输一半注金。\n5 秒后进入玩家回合。')
+    await this.say('💡 投降阶段 · 牌型不佳可发送「投降」，只输一半注金\n5 秒后进入玩家回合。')
     this.wait(() => this.playerTurns(), 5)
   }
 
@@ -348,13 +348,14 @@ export class Game {
     await sleep(1000)
     if (this.isEnded) return
 
-    // 快速模式：庄家的牌一次抽完，不逐张揭示
+    // 快速模式：庄家的牌一次抽完，一次说完
     if (this.config.quickMode) {
       while (score(this.dealer) < 17 || (this.config.dealerHitSoft17 && isSoft17(this.dealer))) {
         this.dealer.push(this.draw())
       }
       const quick = score(this.dealer)
-      await this.say(quick > 21 ? `💥 庄家爆牌（${quick}），全场松了口气。` : `庄家最终点数：${quick}`)
+      const board = `庄家：${format(this.dealer)} [${quick}]`
+      await this.say(quick > 21 ? `${board}\n💥 庄家爆牌（${quick}），全场松了口气。` : board)
       await this.settlePve()
       return
     }

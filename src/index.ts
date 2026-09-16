@@ -82,15 +82,15 @@ const BARE_ACTIONS: Record<string, Action> = {
 
 /** bj.* 子指令：完整入口，关掉裸词后仍然打得出。 */
 const ACTION_COMMANDS: Array<[string, string, Action, string]> = [
-  ['.下注', '.bet', 'join', '下注入座'],
+  ['.下注', '.bet', 'join', '入座，注额由系统按余额随机安排'],
   ['.开始', '.start', 'start', '发牌并进入下一阶段'],
-  ['.保险', '.insure', 'insure', '购买保险'],
-  ['.跳过', '.skip', 'skip', '跳过保险'],
-  ['.投降', '.surrender', 'surrender', '投降认输'],
-  ['.要牌', '.hit', 'hit', '要一张牌'],
-  ['.停牌', '.stand', 'stand', '停牌'],
-  ['.加倍', '.double', 'double', '将注金翻倍'],
-  ['.分牌', '.split', 'split', '分开两手牌'],
+  ['.保险', '.insure', 'insure', '庄家明牌为 A 时买入'],
+  ['.跳过', '.skip', 'skip', '不买保险，等窗口到时继续'],
+  ['.投降', '.surrender', 'surrender', '认输，只输一半注金'],
+  ['.要牌', '.hit', 'hit', '再要一张牌'],
+  ['.停牌', '.stand', 'stand', '不再要牌，交给下一位'],
+  ['.加倍', '.double', 'double', '首轮将注金翻倍'],
+  ['.分牌', '.split', 'split', '起手对子时分开两手牌'],
 ]
 
 export function apply(ctx: Context, config: Config) {
@@ -135,24 +135,20 @@ export function apply(ctx: Context, config: Config) {
     if (seated !== null) return `💡 ${username} 已在牌桌上，注 ${seated}\n发送「开始」立即发牌。`
 
     let balance = await economy.balance(platform, userId)
-    const lines: string[] = []
-
     const welfare = await claimWelfare(platform, userId, balance)
-    if (welfare) {
-      balance += welfare
-      lines.push(`💡 余额见底\n已自动发放今日低保 ${welfare}，愿你东山再起。`)
-    }
+    if (welfare) balance += welfare
 
     if (balance < config.minBet) {
-      lines.push(`⚠️ 余额不足，当前 ${balance}`)
-      lines.push(config.welfareEnabled ? '今日低保已领过，跨零点后重置。' : '余额见底，先攒一点再来。')
-      lines.push('发送「bj.战绩」看看战绩。')
-      return lines.join('\n')
+      const reason = welfare
+        ? `已发放今日低保 ${welfare}，仍不够起注 ${config.minBet}。`
+        : config.welfareEnabled ? '今日低保已领过，跨零点后重置。' : '余额见底，先攒一点再来。'
+      return [`⚠️ 余额不足，当前 ${balance}`, reason, '发送「bj.战绩」看看战绩。'].join('\n')
     }
 
     const amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
-    lines.push(await game.join(platform, userId, username, amount))
-    return lines.join('\n')
+    const joined = await game.join(platform, userId, username, amount)
+    // 结果行在最前，余额见底的说明退到正文
+    return welfare ? `${joined}\n余额见底，已自动发放今日低保 ${welfare}，愿你东山再起。` : joined
   }
 
   ctx.on('dispose', () => {
@@ -167,30 +163,36 @@ export function apply(ctx: Context, config: Config) {
    * 动作的唯一实现：裸词中间件与 bj.* 子指令都走这里。
    * 返回空串表示这次不适用，调用方据此交还给下一个中间件。
    */
-  async function act(session: Session, action: Action): Promise<string> {
+  async function act(session: Session, action: Action): Promise<string | undefined> {
     const game = games.get(session.channelId)
-    if (!game || game.phase === Phase.Ended) return ''
+    if (!game || game.phase === Phase.Ended) return undefined
 
     if (action === 'join') {
       // 注额由系统按余额随机安排
-      return game.phase === Phase.Joining ? autoJoin(game, session, session.username || session.userId) : ''
+      return game.phase === Phase.Joining ? autoJoin(game, session, session.username || session.userId) : undefined
     }
     if (action === 'start') {
       if (game.phase === Phase.Joining) return game.start()
-      if (game.phase === Phase.Surrender) game.playerTurns()
-      return ''
+      if (game.phase === Phase.Surrender) {
+        game.playerTurns()
+        return ''
+      }
+      return undefined
     }
     if (action === 'insure') {
-      return game.phase === Phase.Insurance ? game.insure(session.userId) : ''
+      return game.phase === Phase.Insurance ? game.insure(session.userId) : undefined
     }
     if (action === 'skip') {
       // 跳过保险只是不作声，等窗口到时自己往下走
-      return ''
+      return game.phase === Phase.Insurance ? '' : undefined
     }
     if (action === 'surrender') {
-      return game.phase === Phase.Surrender ? game.surrender(session.userId) : ''
+      return game.phase === Phase.Surrender ? game.surrender(session.userId) : undefined
     }
-    return game.phase === Phase.PlayerTurn ? game.hit(session.userId, action) : ''
+    if (game.phase !== Phase.PlayerTurn) return undefined
+    // hit() 用空串表示「这一手不归你」，这里换算成「不适用」，好让裸词交还给下一个中间件
+    const out = await game.hit(session.userId, action)
+    return out === '' ? undefined : out
   }
 
   // 对局中的频道才解析这些裸指令；其余频道只做一次 Map 查询
@@ -206,9 +208,9 @@ export function apply(ctx: Context, config: Config) {
     if (!action) return next()
 
     const reply = await act(session, action)
-    // 没处理就交出去，不把别人的消息吞掉
-    if (!reply) return next()
-    await session.send(reply)
+    // 不适用就交出去，不把别人的消息吞掉；空串表示已接手但没有话要说
+    if (reply === undefined) return next()
+    if (reply) await session.send(reply)
   })
 
   const cmd = ctx.command('bj', '21 点纸牌游戏')
@@ -250,7 +252,7 @@ export function apply(ctx: Context, config: Config) {
       .alias(alias)
       .action(async ({ session }) => {
         const reply = await act(session, action)
-        return reply || '💡 现在不是这个动作的时候\n发送「bj.战绩」看战绩，或等下一次机会。'
+        return reply ?? '💡 现在不是这个动作的时候\n发送「bj.战绩」看战绩，或等下一次机会。'
       })
   }
 
@@ -279,8 +281,10 @@ export function apply(ctx: Context, config: Config) {
         .execute()
       if (!rows.length) return '📋 排行榜还空着\n第一个坐上牌桌的人，名字会写在这里。\n发送「bj.来一局」开一桌。'
       const medals = ['🥇', '🥈', '🥉']
-      return [`📋 21 点盈亏排行榜 · 前 ${rows.length} 位`,
-        ...rows.map((stat, index) =>
+      // 纯文本不出图，列四条封顶，其余折成一行汇总
+      const shown = rows.slice(0, 4)
+      return [`📋 21 点盈亏排行榜 · 前 ${shown.length} 位`,
+        ...shown.map((stat, index) =>
           `${medals[index] ?? `${index + 1}.`} ${stat.username}：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit}`),
       ].join('\n')
     })
