@@ -108,7 +108,7 @@ export function apply(ctx: Context, config: Config) {
   async function autoJoin(game: Game, session: Session, username: string) {
     const { platform, userId } = session
     const seated = game.seated(userId)
-    if (seated !== null) return `ℹ️ ${username} 已在牌桌上（注 ${seated}），等待开局。`
+    if (seated !== null) return `💡 ${username} 已在牌桌上，注 ${seated}。\n发送「开始」立即发牌。`
 
     let balance = await economy.balance(platform, userId)
     const lines: string[] = []
@@ -120,7 +120,7 @@ export function apply(ctx: Context, config: Config) {
     }
 
     if (balance < config.minBet) {
-      lines.push(`⚠️ 余额不足（当前 ${balance}），今天先歇一歇吧。`)
+      lines.push(`⚠️ 余额不足，当前 ${balance}。今天先歇一歇。`)
       return lines.join('\n')
     }
 
@@ -176,43 +176,43 @@ export function apply(ctx: Context, config: Config) {
       '🃏 21 点',
       '',
       '指令',
-      '▸ bj.来一局 [-n]　创建对局（-n 为 PVP）',
-      '▸ bj.强制结束　　结束当前对局并退款',
-      '▸ bj.战绩　　　　查询个人战绩',
-      '▸ bj.排行 [-l N]　盈亏排行榜',
+      '• bj.来一局 [-n]　开一桌（-n 为 PVP）',
+      '• bj.强制结束　　结束当前对局并退款',
+      '• bj.战绩　　　　查询个人战绩',
+      '• bj.排行 [-l N]　盈亏排行榜',
       '',
       '核心规则',
-      '▸ Blackjack 赔 3:2，庄家点数小于 17 必须要牌，分 A 只发一张',
+      '• Blackjack 赔 3:2，庄家点数小于 17 必须要牌，分 A 只发一张',
     ].join('\n'))
 
-  cmd.subcommand('.来一局', '创建一局新游戏')
+  cmd.subcommand('.来一局', '开一桌新对局')
     .option('nodealer', '-n 无庄家的 PVP 模式')
     .action(async ({ session, options }) => {
-      if (games.has(session.channelId)) return '⚠️ 当前频道已有对局正在进行。'
+      if (games.has(session.channelId)) return '⚠️ 本频道已有对局正在进行\n发送「bj.强制结束」结束它，再开新的。'
       const game = new Game(ctx, config, economy, session.bot, session.channelId,
         !!options.nodealer, () => games.delete(session.channelId))
       games.set(session.channelId, game)
       return [
         `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
-        '请发送「下注」加入游戏，注额由系统随机安排。',
+        '发送「下注」入座，注额由系统按余额随机安排。',
         '发送「开始」立即发牌。',
       ].join('\n')
     })
 
-  cmd.subcommand('.强制结束', '强制结束当前对局')
+  cmd.subcommand('.强制结束', '结束当前对局并退款')
     .action(async ({ session }) => {
       const game = games.get(session.channelId)
-      if (!game) return '⚠️ 当前没有进行中的对局。'
+      if (!game) return '💡 本频道没有进行中的对局。\n发送「bj.来一局」开一桌。'
       await game.refundAll()
       game.end()
-      return '✅ 对局已强制结束，注金已退回。'
+      return '✅ 对局已结束，注金已退回。'
     })
 
   cmd.subcommand('.战绩 [target:user]', '查询战绩')
     .action(async ({ session }, target) => {
       const userId = target ? target.split(':')[1] : session.userId
       const [stat] = await ctx.database.get('blackjack_stats', { userId })
-      if (!stat) return '⚠️ 还没有战绩记录。'
+      if (!stat) return '📋 还没有战绩\n打完第一局后，这里会记下盈亏、胜率与连胜。\n发送「bj.来一局」开一桌。'
       const total = stat.wins + stat.loses + stat.draws
       const rate = total ? (stat.wins / total * 100).toFixed(1) : '0.0'
       return [
@@ -235,9 +235,9 @@ export function apply(ctx: Context, config: Config) {
         .orderBy('totalProfit', 'desc')
         .limit(Math.min(options.limit, 20))
         .execute()
-      if (!rows.length) return '⚠️ 暂时没有排名数据。'
+      if (!rows.length) return '📋 排行榜还空着\n第一个坐上牌桌的人，名字会写在这里。\n发送「bj.来一局」开一桌。'
       const medals = ['🥇', '🥈', '🥉']
-      return [`📋 21 点盈亏排行榜（前 ${rows.length}）`, '———————————————',
+      return [`📋 21 点盈亏排行榜 · 前 ${rows.length} 位`,
         ...rows.map((stat, index) =>
           `${medals[index] ?? `${index + 1}.`} ${stat.username}：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit}`),
       ].join('\n')
