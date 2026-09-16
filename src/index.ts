@@ -28,8 +28,8 @@ export const usage = `## 使用
 | 指令 | 说明 |
 | --- | --- |
 | \`bj.战绩 [@某人]\` | 查询战绩 |
-| \`bj.排行\` | 查看盈亏排行榜 |
-| \`bj.强制结束\` | 强制结束当前对局 |
+| \`bj.排行榜\` | 查看盈亏排行榜 |
+| \`bj.结束\` | 结束当前对局并退款 |
 
 ## 规则
 
@@ -177,9 +177,9 @@ export function apply(ctx: Context, config: Config) {
       '',
       '指令',
       '• bj.来一局 [-n]　开一桌（-n 为 PVP）',
-      '• bj.强制结束　　结束当前对局并退款',
+      '• bj.结束　　　　结束当前对局并退款',
       '• bj.战绩　　　　查询个人战绩',
-      '• bj.排行 [-l N]　盈亏排行榜',
+      '• bj.排行榜 [-l N]　盈亏排行榜',
       '',
       '核心规则',
       '• Blackjack 赔 3:2，庄家点数小于 17 必须要牌，分 A 只发一张',
@@ -188,7 +188,7 @@ export function apply(ctx: Context, config: Config) {
   cmd.subcommand('.来一局', '开一桌新对局')
     .option('nodealer', '-n 无庄家的 PVP 模式')
     .action(async ({ session, options }) => {
-      if (games.has(session.channelId)) return '⚠️ 本频道已有对局正在进行\n发送「bj.强制结束」结束它，再开新的。'
+      if (games.has(session.channelId)) return '⚠️ 本频道已有对局正在进行\n发送「bj.结束」结束它，再开新的。'
       const game = new Game(ctx, config, economy, session.bot, session.channelId,
         !!options.nodealer, () => games.delete(session.channelId))
       games.set(session.channelId, game)
@@ -199,7 +199,7 @@ export function apply(ctx: Context, config: Config) {
       ].join('\n')
     })
 
-  cmd.subcommand('.强制结束', '结束当前对局并退款')
+  cmd.subcommand('.结束', '结束当前对局并退款')
     .action(async ({ session }) => {
       const game = games.get(session.channelId)
       if (!game) return '💡 本频道没有进行中的对局。\n发送「bj.来一局」开一桌。'
@@ -226,7 +226,7 @@ export function apply(ctx: Context, config: Config) {
       ].join('\n')
     })
 
-  cmd.subcommand('.排行', '查看盈亏排行榜')
+  cmd.subcommand('.排行榜', '查看盈亏排行榜')
     .alias('bj.rank')
     .option('limit', '-l <limit:posint> 显示数量', { fallback: 10 })
     .action(async ({ options }) => {

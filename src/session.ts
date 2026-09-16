@@ -155,7 +155,7 @@ export class Game {
   async start(): Promise<string> {
     if (this.phase !== Phase.Joining) return '💡 这一局已经过了入座阶段。'
     if (!this.players.length) return '💡 还没有人入座，发送「下注」坐上牌桌。'
-    if (this.pvp && this.players.length < 2) return '⚠️ PVP 至少需要 2 人\n再等一位，或发送「bj.强制结束」换成 PVE。'
+    if (this.pvp && this.players.length < 2) return '⚠️ PVP 至少需要 2 人\n再等一位，或发送「bj.结束」换成 PVE。'
 
     this.clear()
     this.phase = Phase.Dealing
