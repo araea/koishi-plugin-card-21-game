@@ -1,5 +1,4 @@
 import { registerDirectInput, directInputConflict } from './ux'
-import { usePresentation } from './ux'
 import { Context, Random, Session } from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import { Config } from './config'
@@ -33,8 +32,9 @@ export const usage = `## 使用
 | \`bj.停牌\` | \`停牌\` / \`s\` | |
 | \`bj.加倍\` | \`加倍\` / \`d\` | 首轮将注金翻倍 |
 | \`bj.分牌\` | \`分牌\` / \`p\` | 起手对子可用 |
-| \`bj.投降\` | \`投降\` | 开局 5 秒内可用 |
 | \`bj.保险\` | \`保险\` | 庄家明牌为 A 时可用 |
+| \`bj.投降\` | \`投降\` | 发牌后的投降阶段可用，只输一半注金 |
+| \`bj.跳过\` | \`跳过\` | 不买保险或不投降；全员表态后立即进入下一阶段 |
 
 ## 规则
 
@@ -87,7 +87,7 @@ const ACTION_COMMANDS: Array<[string, string, Action, string]> = [
   ['.下注', '.bet', 'join', '入座，不写金额时使用最低注额'],
   ['.开始', '.start', 'start', '发牌并进入下一阶段'],
   ['.保险', '.insure', 'insure', '庄家明牌为 A 时买入'],
-  ['.跳过', '.skip', 'skip', '不买保险，等窗口到时继续'],
+  ['.跳过', '.skip', 'skip', '不买保险或不投降'],
   ['.投降', '.surrender', 'surrender', '认输，只输一半注金'],
   ['.要牌', '.hit', 'hit', '再要一张牌'],
   ['.停牌', '.stand', 'stand', '不再要牌，交给下一位'],
@@ -96,7 +96,11 @@ const ACTION_COMMANDS: Array<[string, string, Action, string]> = [
 ]
 
 export function apply(ctx: Context, config: Config) {
-  const presentation = usePresentation(ctx, 'bj')
+  // 主指令必须先于 payments 的子指令注册，否则 Koishi 会丢掉它的描述
+  const cmd = ctx.command('bj', '21 点纸牌游戏')
+    .alias('blackjack')
+    .action(({ session }) => session.execute('help bj'))
+
   ctx.model.extend('blackjack_stats', {
     id: 'unsigned',
     userId: 'string',
@@ -188,8 +192,8 @@ export function apply(ctx: Context, config: Config) {
       return game.phase === Phase.Insurance ? game.insure(session.userId) : undefined
     }
     if (action === 'skip') {
-      // 跳过保险只是不作声，等窗口到时自己往下走
-      return game.phase === Phase.Insurance ? '' : undefined
+      // 跳过不作声；全员表态后对局自己往下走
+      return game.phase === Phase.Insurance || game.phase === Phase.Surrender ? game.skip(session.userId) : undefined
     }
     if (action === 'surrender') {
       return game.phase === Phase.Surrender ? game.surrender(session.userId) : undefined
@@ -215,7 +219,8 @@ export function apply(ctx: Context, config: Config) {
 
     if (action === 'join') return game.phase === Phase.Joining && game.seated(session.userId) === null
     if (action === 'start') return game.phase === Phase.Joining || game.phase === Phase.Surrender
-    if (action === 'insure' || action === 'skip') return game.phase === Phase.Insurance && game.seated(session.userId) !== null
+    if (action === 'insure') return game.phase === Phase.Insurance && game.seated(session.userId) !== null
+    if (action === 'skip') return (game.phase === Phase.Insurance || game.phase === Phase.Surrender) && game.seated(session.userId) !== null
     if (action === 'surrender') return game.phase === Phase.Surrender && game.seated(session.userId) !== null
     return game.phase === Phase.PlayerTurn && game.players[game.turn]?.userId === session.userId
   });
@@ -238,10 +243,6 @@ export function apply(ctx: Context, config: Config) {
     if (reply) await session.send(reply)
   })
 
-  const cmd = ctx.command('bj', '21 点纸牌游戏')
-    .alias('blackjack')
-    .action(({ session }) => session.execute('help bj'))
-
   cmd.subcommand('.来一局', '开一桌新对局')
     .option('nodealer', '-n 无庄家的 PVP 模式')
     .action(async ({ session, options }) => {
@@ -255,8 +256,6 @@ export function apply(ctx: Context, config: Config) {
         '发送「bj.开始」立即发牌。',
       ].join('\n')
     })
-
-  cmd.subcommand('.延长', '延长当前操作阶段的等待时间').action(({session}) => games.get(session.channelId)?.extend(session.userId) ?? '本频道没有进行中的对局。')
 
   cmd.subcommand('.结束', '结束当前对局并退款')
     .userFields(['id', 'name', 'authority'])

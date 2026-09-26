@@ -14,11 +14,15 @@ test('failed refund is reported, includes all staked hands, and cannot be duplic
  assert.equal(await game.refundAll(),false);assert.deepEqual(amounts,[320])
  assert.equal(await game.refundAll(),false);assert.equal(amounts.length,1)
 })
-test('deadline extension is limited to participants or the current player',()=>{
+test('insurance and surrender windows end as soon as every seated player has decided',async()=>{
  const {game,waits}=setup(async()=>true)
- assert.match(game.extend('other'),/只有/);assert.equal(waits.length,1)
- assert.match(game.extend('owner'),/45 秒/);assert.equal(waits.length,2)
- game.phase=Phase.PlayerTurn;game.players=[{userId:'player'}] as any
- assert.match(game.extend('owner'),/只有/)
- assert.match(game.extend('player'),/重新计时/)
+ ;(game as any).config.decisionTimeout=10
+ ;(game as any).say=async()=>{}
+ game.players=[{userId:'a',username:'A',hands:[{bet:100,cards:[]}]},{userId:'b',username:'B',hands:[{bet:100,cards:[]}]}] as any
+ game.phase=Phase.Surrender
+ assert.equal(game.skip('stranger'),'');assert.equal(waits.length,1)
+ assert.equal(game.skip('a'),'');assert.equal(waits.length,1)
+ assert.equal(game.skip('a'),'');assert.equal(waits.length,1)
+ assert.match(await game.surrender('b'),/投降/)
+ assert.deepEqual(waits.slice(1),[500])
 })

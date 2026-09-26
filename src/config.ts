@@ -4,6 +4,7 @@ export interface Config {
   minBet: number
   deckCount: number
   playerTurnTimeout: number
+  decisionTimeout: number
   joinPhaseTimeout: number
   currency: 'monetary' | 'bella'
   currencyName?: string
@@ -19,6 +20,7 @@ export const Config: Schema<Config> = Schema.intersect([
     minBet: Schema.natural().min(1).default(10).description('最低起注金额。'),
     deckCount: Schema.natural().min(1).max(8).default(4).description('牌靴里的副数（一副 52 张）。'),
     playerTurnTimeout: Schema.natural().min(5).default(30).description('玩家操作超时（秒），超时自动停牌。'),
+    decisionTimeout: Schema.natural().min(3).default(10).description('保险与投降阶段的等待时间（秒）。全员表态后立即进入下一阶段。'),
     joinPhaseTimeout: Schema.natural().min(5).default(45).description('加入阶段的等待时间（秒）。'),
     dealerHitSoft17: Schema.boolean().default(false).description('庄家在软 17（含被当作 11 的 A）时继续要牌。'),
     enableDirectInput: Schema.boolean().default(true)

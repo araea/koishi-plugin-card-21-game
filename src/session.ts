@@ -57,7 +57,8 @@ export class Game {
   /** 已退款或已结算，防止结算路径与 .结束 各赔一次。 */
   private settled = false
   private dispose: () => void = null
-  private pendingWait: { callback: () => Promise<void> | void; seconds: number } | null = null
+  /** 保险 / 投降阶段已表态的玩家；全员表态就不必等满窗口。 */
+  private decided = new Set<string>()
 
   constructor(
     private ctx: Context,
@@ -78,10 +79,8 @@ export class Game {
   private wait(callback: () => Promise<void> | void, seconds: number) {
     if (this.phase === Phase.Ended) return
     this.clear()
-    this.pendingWait = {callback, seconds}
     this.dispose = this.ctx.setTimeout(async () => {
       this.dispose = null
-      this.pendingWait = null
       if (this.phase !== Phase.Ended) await callback()
     }, seconds * 1000)
   }
@@ -89,15 +88,6 @@ export class Game {
   private clear() {
     this.dispose?.()
     this.dispose = null
-    this.pendingWait = null
-  }
-
-  extend(userId: string): string {
-    if (!this.pendingWait || this.phase === Phase.Ended) return '当前没有可延长的等待阶段。'
-    if (this.phase === Phase.PlayerTurn ? this.players[this.turn]?.userId !== userId : this.initiator !== userId && !this.players.some(p => p.userId === userId)) return '只有当前行动者或本阶段参与者可以延长。'
-    const {callback, seconds} = this.pendingWait
-    this.wait(callback, Math.max(30, seconds))
-    return `已重新计时，当前阶段还可等待 ${Math.max(30, seconds)} 秒。`
   }
 
   /** 等待期间可能已被 .结束 收掉；用取值器读，避免被类型收窄误判。 */
@@ -197,8 +187,9 @@ export class Game {
 
     if (!this.pvp && this.dealer[0]?.rank === 'A') {
       this.phase = Phase.Insurance
-      await this.say('💡 庄家明牌为 A，要买保险吗\n发送「bj.保险」买入，或发送「bj.跳过」。\n30 秒后进入投降阶段；可发送「bj.延长」延长等待。')
-      this.wait(() => this.surrenderPhase(), 30)
+      this.decided.clear()
+      await this.say(`💡 庄家明牌为 A，要买保险吗\n发送「bj.保险」买入，或发送「bj.跳过」。\n全员表态或 ${this.config.decisionTimeout} 秒后进入投降阶段。`)
+      this.wait(() => this.surrenderPhase(), this.config.decisionTimeout)
       return ''
     }
     await this.surrenderPhase()
@@ -207,8 +198,24 @@ export class Game {
 
   private async surrenderPhase() {
     this.phase = Phase.Surrender
-    await this.say('💡 投降阶段 · 牌型不佳可发送「bj.投降」，只输一半注金\n30 秒后进入玩家回合；可发送「bj.延长」延长等待。')
-    this.wait(() => this.playerTurns(), 30)
+    this.decided.clear()
+    await this.say(`💡 投降阶段 · 牌型不佳可发送「bj.投降」，只输一半注金\n不投降就发送「bj.跳过」；全员表态或 ${this.config.decisionTimeout} 秒后进入玩家回合。`)
+    this.wait(() => this.playerTurns(), this.config.decisionTimeout)
+  }
+
+  /** 记下一位玩家的表态；全员表态后稍等片刻进入下一阶段，好让这条回复先发出去。 */
+  private decide(userId: string) {
+    this.decided.add(userId)
+    if (!this.players.every((player) => this.decided.has(player.userId))) return
+    this.wait(() => this.phase === Phase.Insurance ? this.surrenderPhase() : this.playerTurns(), 0.5)
+  }
+
+  /** 不买保险或不投降。只有入座且尚未表态的玩家才算数。 */
+  skip(userId: string): string {
+    if (this.phase !== Phase.Insurance && this.phase !== Phase.Surrender) return ''
+    if (!this.players.some((player) => player.userId === userId) || this.decided.has(userId)) return ''
+    this.decide(userId)
+    return ''
   }
 
   async playerTurns() {
@@ -258,7 +265,7 @@ export class Game {
     if (this.canSplit(player)) actions.push('分牌')
 
     const which = player.hands.length > 1 ? `（手牌 ${player.handIndex + 1}/${player.hands.length}）` : ''
-    await this.say(`⏳ 轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n可发送：${actions.map(a => 'bj.' + a).join(' · ')}。${this.config.playerTurnTimeout} 秒内不动作将自动停牌；可发送「bj.延长」重新计时。`)
+    await this.say(`⏳ 轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n可发送：${actions.map(a => 'bj.' + a).join(' · ')}。${this.config.playerTurnTimeout} 秒内不动作将自动停牌。`)
 
     this.wait(async () => {
       await this.say(`⏳ ${player.username} 操作超时，自动停牌。`)
@@ -338,6 +345,7 @@ export class Game {
     if (!player || player.hands[0].surrendered) return ''
     player.hands[0].surrendered = true
     player.hands[0].finished = true
+    this.decide(userId)
     return `${player.username} 选择投降（保留一半注金）。`
   }
 
@@ -348,6 +356,7 @@ export class Game {
     const cost = Math.floor(player.hands[0].bet / 2)
     if (!await this.economy.charge(player.platform, player.userId, cost)) return `⚠️ 余额不足，保险需要 ${cost}。`
     player.hands[0].insurance = cost
+    this.decide(userId)
     return `✅ ${player.username} 购买了保险（花费 ${cost}）。`
   }
 
