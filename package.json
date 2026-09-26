@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-card-21-game",
   "description": "Koishi 21 点：支持玩家对战、庄家模式与货币玩法。",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
