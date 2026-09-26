@@ -1,3 +1,4 @@
+import { createPayments } from './payments'
 import { Context } from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import { Config } from './config'
@@ -19,6 +20,7 @@ const round = (amount: number) => Math.round(amount)
 
 export function createEconomy(ctx: Context, config: Config) {
   const logger = ctx.logger('card-21-game')
+  const payments = createPayments(ctx, 'bj')
 
   async function uidOf(platform: string, userId: string) {
     const user = await ctx.database.getUser(platform, userId)
@@ -58,20 +60,17 @@ export function createEconomy(ctx: Context, config: Config) {
     }
   }
 
-  async function payout(platform: string, userId: string, amount: number) {
+  async function payout(platform: string, userId: string, amount: number): Promise<boolean> {
     const gain = round(amount)
-    if (gain <= 0) return
-    try {
+    return payments.pay(platform, userId, gain, config.currency === 'bella' ? 'bella' : config.currencyName, async () => {
       if (config.currency === 'bella') {
         const [row] = await ctx.database.get('bella_sign_in', { id: userId })
-        if (row) await ctx.database.set('bella_sign_in', { id: userId }, { point: row.point + gain })
-        return
+        if (!row) throw new Error('积分账户不存在')
+        await ctx.database.set('bella_sign_in', { id: userId }, { point: row.point + gain })
+      } else {
+        await ctx.monetary.gain(await uidOf(platform, userId), gain, config.currencyName)
       }
-      await ctx.monetary.gain(await uidOf(platform, userId), gain, config.currencyName)
-    } catch (error) {
-      logger.warn('赔付失败（%s）：%s', userId, error.message)
-    }
+    })
   }
-
-  return { balance, charge, payout }
+  return { balance, charge, payout, pending: payments.pending }
 }

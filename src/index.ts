@@ -1,3 +1,5 @@
+import { registerDirectInput, directInputConflict } from './ux'
+import { usePresentation } from './ux'
 import { Context, Random, Session } from 'koishi'
 import {} from 'koishi-plugin-monetary'
 import { Config } from './config'
@@ -10,7 +12,7 @@ export const inject = { required: ['database'], optional: ['monetary'] }
 
 export const usage = `## 使用
 
-发送 \`bj.来一局\` 开桌，加 \`-n\` 启用 PVP。发送 \`下注\` 入座，注额由系统按余额随机安排；余额用尽时自动领取每日一次的东山再起资金。再发送 \`开始\` 或等待倒计时。
+发送 \`bj.来一局\` 开桌，加 \`-n\` 启用 PVP。发送 \`下注\` 入座，不写金额时使用最低注额；余额用尽时自动领取每日一次的东山再起资金。再发送 \`开始\` 或等待倒计时。
 
 ## 指令
 
@@ -25,7 +27,7 @@ export const usage = `## 使用
 
 | 动作 | 裸词 | 说明 |
 | --- | --- | --- |
-| \`bj.下注\` | \`下注\` | 入座，注额由系统按余额随机安排 |
+| \`bj.下注\` | \`下注\` | 入座，不写金额时使用最低注额 |
 | \`bj.开始\` | \`开始\` | 发牌并进入下一阶段 |
 | \`bj.要牌\` | \`要牌\` / \`h\` | |
 | \`bj.停牌\` | \`停牌\` / \`s\` | |
@@ -82,7 +84,7 @@ const BARE_ACTIONS: Record<string, Action> = {
 
 /** bj.* 子指令：完整入口，关掉裸词后仍然打得出。 */
 const ACTION_COMMANDS: Array<[string, string, Action, string]> = [
-  ['.下注', '.bet', 'join', '入座，注额由系统按余额随机安排'],
+  ['.下注', '.bet', 'join', '入座，不写金额时使用最低注额'],
   ['.开始', '.start', 'start', '发牌并进入下一阶段'],
   ['.保险', '.insure', 'insure', '庄家明牌为 A 时买入'],
   ['.跳过', '.skip', 'skip', '不买保险，等窗口到时继续'],
@@ -94,6 +96,7 @@ const ACTION_COMMANDS: Array<[string, string, Action, string]> = [
 ]
 
 export function apply(ctx: Context, config: Config) {
+  const presentation = usePresentation(ctx, 'bj')
   ctx.model.extend('blackjack_stats', {
     id: 'unsigned',
     userId: 'string',
@@ -117,22 +120,23 @@ export function apply(ctx: Context, config: Config) {
   /** 山穷水尽（余额不足起注）时自动发放当日低保，返回发放金额；不可领返回 0。 */
   async function claimWelfare(platform: string, userId: string, balance: number) {
     if (!config.welfareEnabled || balance >= config.minBet) return 0
+    if (await economy.pending(platform, userId)) return 0
     const today = new Date().toLocaleDateString('sv')
     const [record] = await ctx.database.get('blackjack_welfare', { userId })
     if (record?.date === today) return 0
     await ctx.database.upsert('blackjack_welfare', [{ userId, date: today }])
-    await economy.payout(platform, userId, config.welfareAmount)
+    if (!await economy.payout(platform, userId, config.welfareAmount)) return 0
     return config.welfareAmount
   }
 
   /**
-   * 下注入口：注额由系统按余额随机安排，玩家无需操心；
+   * 下注入口：不写金额时使用最低注额，玩家无需操心；
    * 余额见底则先自动领当日低保——一条消息就能坐上牌桌。
    */
-  async function autoJoin(game: Game, session: Session, username: string) {
+  async function autoJoin(game: Game, session: Session, username: string, requestedAmount?: number) {
     const { platform, userId } = session
     const seated = game.seated(userId)
-    if (seated !== null) return `💡 ${username} 已在牌桌上，注 ${seated}\n发送「开始」立即发牌。`
+    if (seated !== null) return `💡 ${username} 已在牌桌上，注 ${seated}\n发送「bj.开始」立即发牌。`
 
     let balance = await economy.balance(platform, userId)
     const welfare = await claimWelfare(platform, userId, balance)
@@ -145,7 +149,8 @@ export function apply(ctx: Context, config: Config) {
       return [`⚠️ 余额不足，当前 ${balance}`, reason, '发送「bj.战绩」看看战绩。'].join('\n')
     }
 
-    const amount = Random.int(config.minBet, Math.min(balance, config.minBet * 10))
+    const amount = requestedAmount ?? config.minBet
+    if (!Number.isSafeInteger(amount) || amount < config.minBet || amount > balance) return `下注金额应为 ${config.minBet} 至 ${Math.floor(balance)} 之间的整数。`
     const joined = await game.join(platform, userId, username, amount)
     // 结果行在最前，余额见底的说明退到正文
     return welfare ? `${joined}\n余额见底，已自动发放今日低保 ${welfare}，愿你东山再起。` : joined
@@ -163,13 +168,13 @@ export function apply(ctx: Context, config: Config) {
    * 动作的唯一实现：裸词中间件与 bj.* 子指令都走这里。
    * 返回空串表示这次不适用，调用方据此交还给下一个中间件。
    */
-  async function act(session: Session, action: Action): Promise<string | undefined> {
+  async function act(session: Session, action: Action, amount?: number): Promise<string | undefined> {
     const game = games.get(session.channelId)
     if (!game || game.phase === Phase.Ended) return undefined
 
     if (action === 'join') {
-      // 注额由系统按余额随机安排
-      return game.phase === Phase.Joining ? autoJoin(game, session, session.username || session.userId) : undefined
+      // 不写金额时使用最低注额
+      return game.phase === Phase.Joining ? autoJoin(game, session, session.username || session.userId, amount) : undefined
     }
     if (action === 'start') {
       if (game.phase === Phase.Joining) return game.start()
@@ -196,6 +201,25 @@ export function apply(ctx: Context, config: Config) {
   }
 
   // 对局中的频道才解析这些裸指令；其余频道只做一次 Map 查询
+  registerDirectInput(ctx, 'card-21-game', async (session) => {
+    if (!ctx.filter(session)) return false;
+    if (!config.enableDirectInput) return false
+    const game = games.get(session.channelId)
+    if (!game || game.phase === Phase.Ended) return false
+
+    // 下注允许带上金额，金额本身由系统安排，这里只看形状
+    const raw = session.content.trim().toLowerCase()
+    const text = /^(下注|bet)(\s*\d+)?$/.test(raw) ? '下注' : raw
+    const action = BARE_ACTIONS[text]
+    if (!action) return false
+
+    if (action === 'join') return game.phase === Phase.Joining && game.seated(session.userId) === null
+    if (action === 'start') return game.phase === Phase.Joining || game.phase === Phase.Surrender
+    if (action === 'insure' || action === 'skip') return game.phase === Phase.Insurance && game.seated(session.userId) !== null
+    if (action === 'surrender') return game.phase === Phase.Surrender && game.seated(session.userId) !== null
+    return game.phase === Phase.PlayerTurn && game.players[game.turn]?.userId === session.userId
+  });
+
   ctx.middleware(async (session, next) => {
     if (!config.enableDirectInput) return next()
     const game = games.get(session.channelId)
@@ -207,7 +231,8 @@ export function apply(ctx: Context, config: Config) {
     const action = BARE_ACTIONS[text]
     if (!action) return next()
 
-    const reply = await act(session, action)
+    if (await directInputConflict(ctx, session)) return;
+    const reply = await act(session, action, action === 'join' ? Number(raw.match(/\d+/)?.[0]) || undefined : undefined)
     // 不适用就交出去，不把别人的消息吞掉；空串表示已接手但没有话要说
     if (reply === undefined) return next()
     if (reply) await session.send(reply)
@@ -226,10 +251,12 @@ export function apply(ctx: Context, config: Config) {
       games.set(session.channelId, game)
       return [
         `✅ 21 点对局已创建（${options.nodealer ? 'PVP' : 'PVE'}）`,
-        `发送「下注」入座，注额由系统按余额随机安排。${config.joinPhaseTimeout} 秒后自动开始。`,
-        '发送「开始」立即发牌。',
+        `发送「bj.下注 金额」入座，不写金额时使用最低注额。${config.joinPhaseTimeout} 秒后自动开始。`,
+        '发送「bj.开始」立即发牌。',
       ].join('\n')
     })
+
+  cmd.subcommand('.延长', '延长当前操作阶段的等待时间').action(({session}) => games.get(session.channelId)?.extend(session.userId) ?? '本频道没有进行中的对局。')
 
   cmd.subcommand('.结束', '结束当前对局并退款')
     .userFields(['id', 'name', 'authority'])
@@ -241,17 +268,18 @@ export function apply(ctx: Context, config: Config) {
       if (session.userId !== game.initiator && authority < 2) {
         return '⚠️ 权限不够\n只有发起者或权限 2 以上的人能结束这一局。'
       }
-      await game.refundAll()
+      const refunded = await game.refundAll()
       game.end()
+      if (!refunded) return '对局已结束，部分退款尚未确认。请联系管理员用「bj.待核对」核对入账。'
       return '✅ 对局已结束，注金已退回。'
     })
 
   // 动作的完整入口：关掉 enableDirectInput 之后靠这些指令打完一局
   for (const [name, alias, action, description] of ACTION_COMMANDS) {
-    cmd.subcommand(name, description)
+    cmd.subcommand(action === 'join' ? `${name} [amount:posint]` : name, description)
       .alias(alias)
-      .action(async ({ session }) => {
-        const reply = await act(session, action)
+      .action(async ({ session }, amount) => {
+        const reply = await act(session, action, amount ? Number(amount) : undefined)
         return reply ?? '💡 现在不是这个动作的时候\n发送「bj.战绩」看战绩，或等下一次机会。'
       })
   }
@@ -282,7 +310,7 @@ export function apply(ctx: Context, config: Config) {
       if (!rows.length) return '📋 排行榜还空着\n第一个坐上牌桌的人，名字会写在这里。\n发送「bj.来一局」开一桌。'
       const medals = ['🥇', '🥈', '🥉']
       // 纯文本不出图，列四条封顶，其余折成一行汇总
-      const shown = rows.slice(0, 4)
+      const shown = rows
       return [`📋 21 点盈亏排行榜 · 前 ${shown.length} 位`,
         ...shown.map((stat, index) =>
           `${medals[index] ?? `${index + 1}.`} ${stat.username}：${stat.totalProfit > 0 ? '+' : ''}${stat.totalProfit}`),

@@ -57,6 +57,7 @@ export class Game {
   /** 已退款或已结算，防止结算路径与 .结束 各赔一次。 */
   private settled = false
   private dispose: () => void = null
+  private pendingWait: { callback: () => Promise<void> | void; seconds: number } | null = null
 
   constructor(
     private ctx: Context,
@@ -77,8 +78,10 @@ export class Game {
   private wait(callback: () => Promise<void> | void, seconds: number) {
     if (this.phase === Phase.Ended) return
     this.clear()
+    this.pendingWait = {callback, seconds}
     this.dispose = this.ctx.setTimeout(async () => {
       this.dispose = null
+      this.pendingWait = null
       if (this.phase !== Phase.Ended) await callback()
     }, seconds * 1000)
   }
@@ -86,6 +89,15 @@ export class Game {
   private clear() {
     this.dispose?.()
     this.dispose = null
+    this.pendingWait = null
+  }
+
+  extend(userId: string): string {
+    if (!this.pendingWait || this.phase === Phase.Ended) return '当前没有可延长的等待阶段。'
+    if (this.phase === Phase.PlayerTurn ? this.players[this.turn]?.userId !== userId : this.initiator !== userId && !this.players.some(p => p.userId === userId)) return '只有当前行动者或本阶段参与者可以延长。'
+    const {callback, seconds} = this.pendingWait
+    this.wait(callback, Math.max(30, seconds))
+    return `已重新计时，当前阶段还可等待 ${Math.max(30, seconds)} 秒。`
   }
 
   /** 等待期间可能已被 .结束 收掉；用取值器读，避免被类型收窄误判。 */
@@ -114,13 +126,15 @@ export class Game {
   }
 
   async refundAll() {
-    if (this.settled) return
+    if (this.settled) return false
     this.settled = true
+    let success = true
     for (const player of this.players) {
       // 加倍与分牌都会追加下注，退款要按每手实际注金算
       const staked = player.hands.reduce((sum, hand) => sum + hand.bet + hand.insurance, 0)
-      await this.economy.payout(player.platform, player.userId, staked)
+      if (!await this.economy.payout(player.platform, player.userId, staked)) success = false
     }
+    return success
   }
 
   // --- 加入阶段 ---
@@ -156,8 +170,8 @@ export class Game {
       return this.end()
     }
     if (this.pvp && this.players.length < 2) {
-      await this.say('💡 人数不够，这一局作罢\nPVP 至少需要 2 人，注金已退还。\n再等一位，或发送「bj.来一局」不带 -n 开一桌 PVE。')
-      await this.refundAll()
+      const refunded = await this.refundAll()
+      await this.say(`人数不够，本局结束。${refunded ? '注金已退还。' : '部分退款尚未确认，请联系管理员使用「bj.待核对」核对。'}\n发送「bj.来一局」可重新开局。`)
       return this.end()
     }
     await this.say('⏳ 准备时间结束，自动开始。')
@@ -166,7 +180,7 @@ export class Game {
 
   async start(): Promise<string> {
     if (this.phase !== Phase.Joining) return '💡 这一局已经过了入座阶段。'
-    if (!this.players.length) return '💡 还没有人入座，发送「下注」坐上牌桌。'
+    if (!this.players.length) return '💡 还没有人入座，发送「bj.下注」坐上牌桌。'
     if (this.pvp && this.players.length < 2) return '⚠️ PVP 至少需要 2 人\n再等一位，或发送「bj.结束」换成 PVE。'
 
     this.clear()
@@ -183,8 +197,8 @@ export class Game {
 
     if (!this.pvp && this.dealer[0]?.rank === 'A') {
       this.phase = Phase.Insurance
-      await this.say('💡 庄家明牌为 A，要买保险吗\n发送「保险」买入，或发送「跳过」。\n10 秒后进入投降阶段。')
-      this.wait(() => this.surrenderPhase(), 10)
+      await this.say('💡 庄家明牌为 A，要买保险吗\n发送「bj.保险」买入，或发送「bj.跳过」。\n30 秒后进入投降阶段；可发送「bj.延长」延长等待。')
+      this.wait(() => this.surrenderPhase(), 30)
       return ''
     }
     await this.surrenderPhase()
@@ -193,8 +207,8 @@ export class Game {
 
   private async surrenderPhase() {
     this.phase = Phase.Surrender
-    await this.say('💡 投降阶段 · 牌型不佳可发送「投降」，只输一半注金\n5 秒后进入玩家回合。')
-    this.wait(() => this.playerTurns(), 5)
+    await this.say('💡 投降阶段 · 牌型不佳可发送「bj.投降」，只输一半注金\n30 秒后进入玩家回合；可发送「bj.延长」延长等待。')
+    this.wait(() => this.playerTurns(), 30)
   }
 
   async playerTurns() {
@@ -244,7 +258,7 @@ export class Game {
     if (this.canSplit(player)) actions.push('分牌')
 
     const which = player.hands.length > 1 ? `（手牌 ${player.handIndex + 1}/${player.hands.length}）` : ''
-    await this.say(`⏳ 轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n可发送：${actions.join(' · ')}。${this.config.playerTurnTimeout} 秒内不动作将自动停牌。`)
+    await this.say(`⏳ 轮到 ${player.username}${which}\n当前牌：${format(hand.cards)} [${total}]\n可发送：${actions.map(a => 'bj.' + a).join(' · ')}。${this.config.playerTurnTimeout} 秒内不动作将自动停牌；可发送「bj.延长」重新计时。`)
 
     this.wait(async () => {
       await this.say(`⏳ ${player.username} 操作超时，自动停牌。`)
@@ -445,6 +459,9 @@ export class Game {
         : '庄家横扫全场 🏛️')
     }
 
+    for (const player of this.players) {
+      if (await this.economy.pending(player.platform, player.userId)) lines.push(`${player.username}：入账尚未确认，以上为对局应得金额。请联系管理员用「bj.待核对」核对，勿重复付款。`)
+    }
     await this.say([this.table(), '', '📋 结算报告', ...lines].join('\n'))
     this.end()
   }
@@ -492,6 +509,9 @@ export class Game {
       }
     }
 
+    for (const player of this.players) {
+      if (await this.economy.pending(player.platform, player.userId)) lines.push(`${player.username}：入账尚未确认，以上为对局应得金额。请联系管理员用「bj.待核对」核对，勿重复付款。`)
+    }
     await this.say([this.table(), '', '📋 结算报告', ...lines].join('\n'))
     this.end()
   }
