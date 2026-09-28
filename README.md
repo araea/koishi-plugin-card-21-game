@@ -1,6 +1,6 @@
 # 21 点
 
-在 Koishi 群里和朋友下 21 点，支持玩家对战、庄家模式与货币下注。
+Koishi 插件：21 点，支持玩家对战、庄家模式与货币下注
 
 [![GitHub](https://img.shields.io/badge/GitHub-仓库-181717)](https://github.com/araea/koishi-plugin-card-21-game)
 [![npm](https://img.shields.io/badge/npm-包-cc3534)](https://www.npmjs.com/package/koishi-plugin-card-21-game)
