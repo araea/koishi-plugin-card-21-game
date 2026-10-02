@@ -4,6 +4,7 @@ import {} from 'koishi-plugin-monetary'
 import { Config } from './config'
 import { createEconomy } from './economy'
 import { Game, Phase } from './session'
+import { helpOf } from './help'
 
 export { Config }
 export const name = 'card-21-game'
@@ -17,6 +18,7 @@ export const usage = `## 使用
 
 | 指令 | 裸词 | 说明 |
 | --- | --- | --- |
+| \`bj\` | — | 查看指令列表 |
 | \`bj.下注\` | \`下注\` | 入座 |
 | \`bj.开始\` | \`开始\` | 发牌并进入下一阶段 |
 | \`bj.要牌\` | \`要牌\` / \`h\` | 要牌 |
@@ -95,7 +97,11 @@ export function apply(ctx: Context, config: Config) {
   // 主指令必须先于 payments 的子指令注册，否则 Koishi 会丢掉它的描述
   const cmd = ctx.command('bj', '21 点纸牌游戏')
     .alias('blackjack')
-    .action(({ session }) => session.execute('help bj'))
+    .userFields(['authority'])
+    .action(async ({ session }) => {
+      const { title, entries } = await helpOf(session, 'bj', ['来一局', '下注', '开始', '保险', '跳过', '投降', '要牌', '停牌', '加倍', '分牌', '结束', '战绩', '排行榜'].map((name) => `bj.${name}`))
+      return [`📋 ${title}`, ...entries.map(({ name, description }) => `${name} · ${description}`), '发送「bj.来一局」开桌，「bj.下注」入座，「bj.开始」发牌。'].join('\n')
+    })
 
   ctx.model.extend('blackjack_stats', {
     id: 'unsigned',
