@@ -32,8 +32,10 @@ npm i koishi-plugin-card-21-game
 | `bj.战绩 [@某人]` | — | 查询战绩 |
 | `bj.排行榜` | — | 查看盈亏排行 |
 | `bj.结束` | — | 结束当前牌局 |
+| `bj.待核对` | — | 查看未确认入账记录（权限 3） |
+| `bj.确认入账 <编号>` | — | 人工核对后标记，不执行转账（权限 3） |
 
-目标是在不超过 21 点的前提下尽量接近 21。Blackjack 赔率为 3:2，庄家点数低于 17 时必须要牌。余额不足时，玩家每天可领取一次救济资金。
+目标是在不超过 21 点的前提下尽量接近 21。Blackjack 赔率为 3:2。庄家点数低于 17 时必须要牌。余额不足时，玩家每天可领取一次救济资金。
 
 ## 配置
 
@@ -47,8 +49,8 @@ npm i koishi-plugin-card-21-game
 | `dealerHitSoft17` | boolean | `false` | 庄家在软 17（含被当作 11 的 A）时继续要牌 |
 | `enableDirectInput` | boolean | `true` | 对局中直接发送「下注」「要牌」等动作即可 |
 | `quickMode` | boolean | `false` | 快速模式，庄家的牌一次说完 |
-| `welfareEnabled` | boolean | `true` | 余额见底时自动发放每日低保 |
-| `welfareAmount` | number | `200` | 每日低保金额 |
+| `welfareEnabled` | boolean | `true` | 余额见底时自动发放救济资金 |
+| `welfareAmount` | number | `200` | 救济资金金额 |
 | `currency` | `monetary` / `bella` | `monetary` | 使用的货币系统 |
 | `currencyName` | string | `default` | `monetary` 的货币名称 |
 
@@ -56,7 +58,7 @@ npm i koishi-plugin-card-21-game
 
 货币模式必须安装 `monetary` 服务（或 `bella-sign-in` 插件），否则无法下注。
 
-出现待核对提示时，管理员用 `bj.待核对` 查阅记录，再用 `bj.确认入账 <编号>` 标记。标记不执行转账，状态不明时请勿重复补发。
+出现待核对提示时，管理员用 `bj.待核对` 查阅记录，再用 `bj.确认入账 <编号>` 标记。该标记不执行转账，状态不明时不要重复补发。
 
 ## 链接
 
